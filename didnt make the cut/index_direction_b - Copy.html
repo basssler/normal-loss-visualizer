@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Normal Loss Function Visualizer — Direction B</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #f5f7fa;
+      --surface:      #ffffff;
+      --surface-alt:  #f9fafb;
+      --border:       #e2e8f0;
+      --border-strong:#cbd5e1;
+      --ink:          #1a202c;
+      --muted:        #718096;
+      --dim:          #a0aec0;
+      --accent:       #2b6cb0;
+      --accent-soft:  rgba(43,108,176,0.08);
+      --tail:         rgba(229,62,62,0.15);
+      --tail-line:    #c53030;
+      --mean-line:    #2b6cb0;
+      --reorder-line: #b7791f;
+      --reorder-soft: rgba(183,121,31,0.12);
+      --green:        #276749;
+      --green-soft:   rgba(39,103,73,0.08);
+      --purple:       #553c9a;
+      --purple-soft:  rgba(85,60,154,0.08);
+      --orange:       #c05621;
+      --shadow:       0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.05);
+      --radius-sm:    8px;
+      --radius-md:    12px;
+      --radius-lg:    16px;
+      --font-heading: 'Source Serif 4', Georgia, serif;
+      --font:         'Inter', system-ui, sans-serif;
+      --mono:         'Courier New', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── TOP ACCENT STRIPE ──────────────────── */
+    body::before {
+      content: '';
+      display: block;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--reorder-line) 50%, var(--tail-line) 100%);
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 30px 36px 26px;
+    }
+    .header-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .course-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    h1 {
+      font-family: var(--font-heading);
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .header-desc {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      max-width: 72ch;
+      line-height: 1.5;
+    }
+
+    /* ── CONCEPT PILL ROW ───────────────────── */
+    .concept-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+    .concept-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+      border: 1px solid transparent;
+    }
+    .pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pill-prob   { background: rgba(229,62,62,0.1);   border-color: rgba(229,62,62,0.25);   color: var(--tail-line); }
+    .pill-nl     { background: var(--purple-soft);    border-color: rgba(85,60,154,0.2);     color: var(--purple); }
+    .pill-short  { background: rgba(192,86,33,0.08);  border-color: rgba(192,86,33,0.22);   color: var(--orange); }
+    .pill-ss     { background: var(--reorder-soft);   border-color: rgba(183,121,31,0.25);   color: var(--reorder-line); }
+
+    /* ── SHELL ───────────────────────────────── */
+    .app-shell {
+      max-width: 1240px;
+      margin: 22px auto 48px;
+      padding: 0 22px;
+      display: grid;
+      gap: 16px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 292px minmax(0,1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .stack { display: grid; gap: 16px; }
+
+    /* ── PANEL ───────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 17px;
+      box-shadow: var(--shadow);
+    }
+    .section-heading {
+      font-family: var(--font-heading);
+      font-size: 1.04rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .section-divider {
+      height: 2px;
+      background: var(--border);
+      border-radius: 999px;
+      margin: 8px 0 11px;
+    }
+    .section-note {
+      font-size: 0.845rem;
+      color: var(--muted);
+      line-height: 1.48;
+    }
+
+    /* ── INPUTS ──────────────────────────────── */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .field { display: grid; gap: 4px; }
+    .field.is-hidden { display: none; }
+    .field label { display: grid; gap: 1px; }
+    .label-main { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
+    .label-sub  { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface-alt);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
+      padding: 7px 10px;
+      font-size: 0.88rem;
+      font-family: var(--font);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(43,108,176,0.12);
+    }
+    .field-hint { font-size: 0.72rem; color: var(--dim); line-height: 1.4; }
+    .inline-select { margin-top: 6px; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.845rem;
+      font-weight: 600;
+      font-family: var(--font);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    button:hover { transform: translateY(-1px); }
+    .primary-btn {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 3px 12px rgba(43,108,176,0.25);
+    }
+    .secondary-btn { background: var(--surface-alt); color: var(--muted); border-color: var(--border-strong); }
+
+    .optional-panel {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .optional-panel summary {
+      cursor: pointer; list-style: none;
+      padding: 8px 13px; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); user-select: none;
+    }
+    .optional-panel summary::-webkit-details-marker { display: none; }
+    .optional-panel summary::after { content: "＋"; float: right; }
+    .optional-panel[open] summary::after { content: "—"; }
+    .optional-panel-body { padding: 0 13px 13px; }
+
+    /* ── CHART ───────────────────────────────── */
+    .chart-legend {
+      display: flex; flex-wrap: wrap; gap: 7px 14px;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.77rem; color: var(--muted);
+    }
+    .legend-swatch {
+      width: 12px; height: 12px; border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .svg-wrap {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: white;
+    }
+
+    /* ── STAT CARDS ─────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 8px;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      background: var(--surface-alt);
+    }
+    .stat-label { margin-bottom: 6px; }
+    .stat-main  { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+    .stat-sub   { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+    .stat-value { font-size: 1.28rem; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; font-family: var(--mono); }
+
+    /* concept-color stat cards */
+    .stat-card[data-concept="prob"]  { border-color: rgba(229,62,62,0.22); }
+    .stat-card[data-concept="prob"]  .stat-value { color: var(--tail-line); }
+    .stat-card[data-concept="nl"]    { border-color: rgba(85,60,154,0.22); }
+    .stat-card[data-concept="nl"]    .stat-value { color: var(--purple); }
+    .stat-card[data-concept="short"] { border-color: rgba(192,86,33,0.22); }
+    .stat-card[data-concept="short"] .stat-value { color: var(--orange); }
+    .stat-card[data-concept="ss"]    { border-color: rgba(183,121,31,0.22); }
+    .stat-card[data-concept="ss"]    .stat-value { color: var(--reorder-line); }
+
+    .result-interpretation {
+      margin-top: 12px;
+      background: var(--surface-alt);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 12px 16px;
+    }
+    .result-interpretation-header {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .result-interpretation-body {
+      font-size: 0.88rem;
+      color: var(--ink);
+      line-height: 1.46;
+      font-weight: 500;
+    }
+    .result-interpretation-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.42;
+    }
+
+    /* ── TEACHING ───────────────────────────── */
+    .teaching-callouts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .teaching-callout {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 11px;
+      background: var(--surface-alt);
+      font-size: 0.81rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .callout-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-bottom: 5px;
+    }
+    .cl-prob  { background: rgba(229,62,62,0.1);  color: var(--tail-line); }
+    .cl-nl    { background: var(--purple-soft);   color: var(--purple); }
+    .cl-short { background: rgba(192,86,33,0.08); color: var(--orange); }
+    .cl-ss    { background: var(--reorder-soft);  color: var(--reorder-line); }
+
+    /* ── NL PANEL ───────────────────────────── */
+    .nl-panel-grid {
+      display: grid; grid-template-columns: 1fr 1.6fr;
+      gap: 13px; align-items: start; margin-top: 11px;
+    }
+    .nl-summary { display: grid; gap: 8px; font-size: 0.85rem; color: var(--muted); line-height: 1.46; }
+    .nl-summary strong { color: var(--ink); }
+    .nl-strip { display: grid; gap: 8px; }
+    .nl-outcome {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 11px;
+      background: var(--surface-alt);
+    }
+    .nl-outcome-title { font-size: 0.76rem; font-weight: 600; color: var(--muted); margin-bottom: 7px; }
+    .nl-track {
+      position: relative; height: 44px;
+      border-radius: 999px;
+      background: #f1f5f9; overflow: hidden;
+    }
+    .nl-reorder-marker, .nl-demand-marker {
+      position: absolute; top: 7px; width: 3px; height: 30px; border-radius: 999px;
+    }
+    .nl-reorder-marker { background: var(--reorder-line); }
+    .nl-demand-marker  { background: var(--accent); }
+    .nl-shortage-bar {
+      position: absolute; top: 16px; height: 12px; border-radius: 999px;
+      background: rgba(229,62,62,0.22); border: 1px solid rgba(229,62,62,0.35);
+    }
+    .nl-track-label {
+      position: absolute; top: 2px; transform: translateX(-50%);
+      font-size: 0.7rem; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.85); padding: 0 4px; border-radius: 4px; z-index: 2; white-space: nowrap;
+    }
+    .nl-outcome-note { margin-top: 6px; font-size: 0.77rem; color: var(--muted); line-height: 1.36; }
+    .nl-outcome-note strong { color: var(--ink); }
+
+    /* ── MATH ───────────────────────────────── */
+    .math-panel {
+      border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden;
+    }
+    .math-panel summary {
+      cursor: pointer; list-style: none;
+      padding: 11px 14px; font-size: 0.83rem; font-weight: 600;
+      color: var(--ink); background: var(--surface-alt); user-select: none;
+    }
+    .math-panel summary::-webkit-details-marker { display: none; }
+    .math-panel summary::after { content: "Show ▾"; float: right; color: var(--muted); font-weight: 400; font-size: 0.82rem; }
+    .math-panel[open] summary::after { content: "Hide ▴"; }
+    .math-body { padding: 12px 14px; display: grid; gap: 8px; }
+    .math-step {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px; background: white; display: grid; gap: 3px;
+    }
+    .step-badge {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.72rem; font-weight: 700;
+      border-radius: 999px; padding: 2px 8px;
+      margin-bottom: 3px;
+    }
+    .math-step-title { font-size: 0.82rem; color: var(--muted); margin-bottom: 2px; }
+    .math-formula { font-family: var(--mono); font-size: 0.95rem; color: var(--ink); line-height: 1.5; }
+    .equation-band {
+      background: var(--surface-alt); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 9px 11px;
+      font-family: var(--mono); font-size: 0.82rem; color: var(--muted);
+      display: grid; gap: 4px;
+    }
+    .benchmark-note { font-size: 0.77rem; color: var(--dim); line-height: 1.4; margin-top: 8px; }
+
+    /* ── COST ───────────────────────────────── */
+    .cost-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px;
+    }
+    .cost-card {
+      border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 12px; background: var(--surface-alt);
+    }
+    .cost-card .stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+    .cost-card .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--ink); font-family: var(--mono); }
+    .cost-total { background: var(--accent-soft); border-color: rgba(43,108,176,0.24); }
+    .cost-total .stat-value { color: var(--accent); }
+    .footer-note { font-size: 0.77rem; color: var(--muted); line-height: 1.44; margin-top: 10px; }
+    .math-inline { font-family: var(--mono); font-size: 0.9em; }
+
+    /* ── TABLE ───────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      text-align: left; padding: 9px 9px;
+      border-bottom: 2px solid var(--border-strong);
+      color: var(--muted); font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    td { padding: 9px 9px; border-bottom: 1px solid var(--border); color: var(--ink); font-size: 0.86rem; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:nth-child(even) td { background: var(--surface-alt); }
+    td:first-child { color: var(--muted); }
+
+    /* ── RESPONSIVE ─────────────────────────── */
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .nl-panel-grid { grid-template-columns: 1fr; }
+      .teaching-callouts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .app-shell { padding: 0 12px; }
+      .app-header { padding: 20px 16px 16px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .concept-pills { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── HEADER ───────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="course-tag">Inventory Theory · Normal Loss Function</div>
+      <h1>Normal Loss Function Visualizer</h1>
+      <p class="header-desc">
+        See how reorder point changes stockout probability, expected shortage, and inventory cost.
+      </p>
+      <div class="concept-pills">
+        <span class="concept-pill pill-prob"><span class="pill-dot" style="background:var(--tail-line)"></span>P(stockout) = shaded right tail</span>
+        <span class="concept-pill pill-nl"><span class="pill-dot" style="background:var(--purple)"></span>NL(z) = average overshoot (standardized) — not the tail area</span>
+        <span class="concept-pill pill-short"><span class="pill-dot" style="background:var(--orange)"></span>n<sub>R</sub> = σ × NL(z) = units short</span>
+        <span class="concept-pill pill-ss"><span class="pill-dot" style="background:var(--reorder-line)"></span>Safety stock = R − mean LT demand</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <div class="layout">
+
+      <!-- ── SIDEBAR ─────────────────────────── -->
+      <aside class="stack">
+
+        <section class="panel">
+          <h2 class="section-heading">Inputs</h2>
+          <div class="section-divider"></div>
+          <div class="field-grid" id="inputGrid"></div>
+          <details class="optional-panel">
+            <summary>Cost parameters</summary>
+            <div class="optional-panel-body">
+              <div class="field-grid" id="costInputGrid"></div>
+            </div>
+          </details>
+          <div class="button-row">
+            <button class="primary-btn" id="loadBenchmarkBtn" type="button">Load benchmark</button>
+            <button class="secondary-btn" id="resetBtn" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-heading">Scenario</h2>
+          <div class="section-divider"></div>
+          <div class="field">
+            <label for="scenario"><span class="label-main">Uncertainty model</span></label>
+            <select id="scenario">
+              <option value="uncertainDemand">Uncertain demand, known lead time</option>
+              <option value="knownDemand">Known demand, known lead time</option>
+              <option value="uncertainDemandAndLeadTime">Uncertain demand and lead time</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-heading">Key Concepts</h2>
+          <div class="section-divider"></div>
+          <div class="teaching-callouts">
+            <div class="teaching-callout">
+              <div class="callout-label cl-prob">P(stockout)</div>
+              Chance demand during lead time exceeds reorder point R. Shown by the red right tail.
+            </div>
+            <div class="teaching-callout">
+              <div class="callout-label cl-nl">NL(z)</div>
+              Average standardized overshoot beyond R. <em>Not</em> the shaded area — it weights by how far demand exceeds R.
+            </div>
+            <div class="teaching-callout">
+              <div class="callout-label cl-short">n<sub>R</sub></div>
+              Expected units short per cycle. Equals σ<sub>X</sub> × NL(z): converting standardized overshoot to actual units.
+            </div>
+            <div class="teaching-callout">
+              <div class="callout-label cl-ss">Safety stock</div>
+              Extra inventory above mean lead-time demand. Moves R right and lowers stockout risk.
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- ── MAIN ────────────────────────────── -->
+      <main class="stack">
+
+        <!-- Bell Curve -->
+        <section class="panel">
+          <h2 class="section-heading">Lead-Time Demand Distribution</h2>
+          <div class="section-divider"></div>
+          <p class="section-note" style="margin-bottom:12px">
+            The <strong style="color:var(--tail-line)">red shaded right tail</strong> shows the probability of stockout.
+            The normal loss function NL(z) is <em>not</em> this area — it measures the average amount by which
+            demand exceeds R, weighted across all right-tail outcomes.
+          </p>
+          <div class="svg-wrap">
+            <svg id="curveSvg" viewBox="0 0 860 400" height="400" aria-label="Bell curve showing lead-time demand distribution"></svg>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item">
+              <span class="legend-swatch" style="background:rgba(43,108,176,0.3)"></span>Mean lead-time demand
+            </span>
+            <span class="legend-item">
+              <span class="legend-swatch" style="background:rgba(183,121,31,0.35)"></span>Reorder point / safety stock
+            </span>
+            <span class="legend-item">
+              <span class="legend-swatch" style="background:rgba(229,62,62,0.3)"></span>Stockout probability (right tail)
+            </span>
+          </div>
+        </section>
+
+        <!-- Output Cards -->
+        <section class="panel" style="display:none">
+          <h2 class="section-heading">Computed Outputs</h2>
+          <div class="section-divider"></div>
+          <div class="stats-grid"></div>
+          <div class="result-interpretation"></div>
+          <p class="section-note" style="margin-top:12px">
+            Reading order: safety stock positions R â†’ tail area = P(stockout) â†’ NL(z) = avg standardized overshoot â†’
+            n<sub>R</sub> = Ïƒ Ã— NL(z) = actual units short per cycle.
+          </p>
+        </section>
+
+        <!-- NL Panel -->
+        <section class="panel" style="display:none">
+          <h2 class="section-heading">What Is the Normal Loss Function?</h2>
+          <div class="section-divider"></div>
+          <p class="section-note">
+            <strong>NL(z) is not the probability of a stockout.</strong>
+            It measures the expected size of the overshoot beyond R in standardized units.
+            The three outcomes below illustrate why shortage <em>size</em> varies even within the tail.
+          </p>
+          <div class="nl-panel-grid">
+            <div class="nl-summary">
+              <div><strong>Left of R:</strong> no stockout → shortage = 0</div>
+              <div><strong>Just right of R:</strong> stockout, but small overshoot</div>
+              <div><strong>Far right of R:</strong> stockout, large overshoot</div>
+              <div style="margin-top:6px;padding-top:9px;border-top:1px solid var(--border)">
+                <strong>Key:</strong> P(stockout) = area of the red tail. NL(z) captures the weighted average of the shortage gap across all those right-tail outcomes.
+              </div>
+            </div>
+            <div class="nl-strip" id="nlStrip"></div>
+          </div>
+        </section>
+
+        <!-- Output Cards -->
+        <section class="panel">
+          <h2 class="section-heading">Computed Outputs</h2>
+          <div class="section-divider"></div>
+          <div class="stats-grid" id="outputCards"></div>
+          <div class="result-interpretation" id="resultInterpretation"></div>
+          <p class="section-note" style="margin-top:12px">
+            Reading order: safety stock positions R → tail area = P(stockout) → NL(z) = avg standardized overshoot →
+            n<sub>R</sub> = σ × NL(z) = actual units short per cycle.
+          </p>
+        </section>
+
+        <!-- NL Panel -->
+        <section class="panel">
+          <h2 class="section-heading">What Is the Normal Loss Function?</h2>
+          <div class="section-divider"></div>
+          <p class="section-note">
+            <strong>NL(z) is not the probability of a stockout.</strong>
+            It measures the expected size of the overshoot beyond R in standardized units.
+            The three outcomes below illustrate why shortage <em>size</em> varies even within the tail.
+          </p>
+          <div class="nl-panel-grid">
+            <div class="nl-summary">
+              <div><strong>Left of R:</strong> no stockout â†’ shortage = 0</div>
+              <div><strong>Just right of R:</strong> stockout, but small overshoot</div>
+              <div><strong>Far right of R:</strong> stockout, large overshoot</div>
+              <div style="margin-top:6px;padding-top:9px;border-top:1px solid var(--border)">
+                <strong>Key:</strong> P(stockout) = area of the red tail. NL(z) captures the weighted average of the shortage gap across all those right-tail outcomes.
+              </div>
+            </div>
+            <div class="nl-strip" id="nlStrip"></div>
+          </div>
+        </section>
+
+        <!-- Math -->
+        <section class="panel">
+          <h2 class="section-heading">Show the Math</h2>
+          <div class="section-divider"></div>
+          <details class="math-panel">
+            <summary>Step-by-step derivation</summary>
+            <div class="math-body">
+              <div class="math-step">
+                <span class="step-badge">Step 1</span>
+                <div class="math-step-title">Convert reorder point R to a z-score</div>
+                <div class="math-formula">z = (R − μ<sub>X</sub>) / σ<sub>X</sub></div>
+              </div>
+              <div class="math-step">
+                <span class="step-badge">Step 2</span>
+                <div class="math-step-title">Evaluate the normal loss function</div>
+                <div class="math-formula">NL(z) = f(z) − z [1 − F(z)]</div>
+              </div>
+              <div class="math-step">
+                <span class="step-badge">Step 3</span>
+                <div class="math-step-title">Convert standardized overshoot to actual units</div>
+                <div class="math-formula">n<sub>R</sub> = σ<sub>X</sub> · NL(z)</div>
+              </div>
+              <div class="equation-band">
+                <div>f(z) = (1/√2π) · exp(−z²/2) &nbsp; [standard normal PDF]</div>
+                <div>F(z) = ∫<sub>−∞</sub><sup>z</sup> f(t) dt &nbsp; [standard normal CDF]</div>
+              </div>
+            </div>
+          </details>
+          <p class="benchmark-note" id="benchmarkNote"></p>
+        </section>
+
+        <!-- Costs -->
+        <section class="panel">
+          <h2 class="section-heading">Cost Breakdown</h2>
+          <div class="section-divider"></div>
+          <div class="cost-grid" id="costCards"></div>
+          <p class="footer-note">
+            Proportional order cost = <span class="math-inline">cD</span> &nbsp;·&nbsp;
+            Setup cost = <span class="math-inline">K(D/Q)</span> &nbsp;·&nbsp;
+            Holding cost = <span class="math-inline">h(Q/2 + SS)</span> &nbsp;·&nbsp;
+            Shortage cost = <span class="math-inline">p(D/Q)n<sub>R</sub></span>
+          </p>
+        </section>
+
+        <!-- Comparison -->
+        <section class="panel">
+          <h2 class="section-heading">Scenario Comparison</h2>
+          <div class="section-divider"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Uncertainty model</th>
+                <th>Mean LT demand</th>
+                <th>LT demand SD</th>
+                <th>P(stockout)</th>
+                <th>Avg units short</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonTable"></tbody>
+          </table>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ── DATA ─────────────────────────────────────────────────────── */
+    const inputConfig = [
+      { id:"meanAnnualDemand",  label:"Average demand",        symbol:"D",       step:"0.01",    group:"core" },
+      { id:"demandStdDev",      label:"Demand variability",    symbol:"σ_D",     step:"0.01",    group:"core", visibleFor:["uncertainDemand","uncertainDemandAndLeadTime"] },
+      { id:"leadTime",          label:"Lead time",             symbol:"L",       step:"0.001",   hint:true, group:"core" },
+      { id:"leadTimeStdDev",    label:"Lead-time variability", symbol:"σ_L",     step:"0.001",   group:"core", visibleFor:["uncertainDemandAndLeadTime"] },
+      { id:"reorderPoint",      label:"Reorder point",         symbol:"R",       step:"0.01",    group:"core" },
+      { id:"orderQuantity",     label:"Order quantity",        symbol:"Q",       step:"0.01",    group:"core" },
+      { id:"setupCost",         label:"Setup cost",            symbol:"K",       step:"0.01",    group:"cost" },
+      { id:"holdingCostRate",   label:"Holding cost rate",     symbol:"h",       step:"0.000001",group:"cost" },
+      { id:"shortageCost",      label:"Shortage penalty",      symbol:"p",       step:"0.01",    group:"cost" },
+      { id:"unitCost",          label:"Unit cost",             symbol:"c",       step:"0.01",    group:"cost" }
+    ];
+    const defaultInputs = {
+      meanAnnualDemand:1000, demandStdDev:220, leadTime:2, leadTimeStdDev:0.05,
+      reorderPoint:260, orderQuantity:800, setupCost:120, holdingCostRate:0.09,
+      shortageCost:3.5, unitCost:0.85, demandUnitBasis:"year", leadTimeUnit:"month",
+      scenario:"uncertainDemand"
+    };
+    const benchmarkInputs = {
+      meanAnnualDemand:600, demandStdDev:204.12414575745962, leadTime:0.25,
+      leadTimeStdDev:0.05, reorderPoint:272.5683134242594, orderQuantity:5222.329682168751,
+      setupCost:100, holdingCostRate:0.004794552452342729, shortageCost:1, unitCost:0.1,
+      demandUnitBasis:"year", leadTimeUnit:"year", scenario:"uncertainDemand"
+    };
+    const benchmarkTargets = {
+      z:1.200919303, pdf:0.193971872, nl:0.055996749, expectedShortage:5.715144262,
+      shortageCost:0.656620085, holdingCost:13.107027, setupCost:11.48912529, proportionalOrderCost:60
+    };
+
+    /* ── DOM ───────────────────────────────────────────────────────── */
+    const inputGrid = document.getElementById("inputGrid");
+    const costInputGrid = document.getElementById("costInputGrid");
+    const outputCards = document.getElementById("outputCards");
+    const costCards = document.getElementById("costCards");
+    const comparisonTable = document.getElementById("comparisonTable");
+    const curveSvg = document.getElementById("curveSvg");
+    const nlStrip = document.getElementById("nlStrip");
+    const resultInterpretation = document.getElementById("resultInterpretation");
+    const scenarioSelect = document.getElementById("scenario");
+    const benchmarkNote = document.getElementById("benchmarkNote");
+    let demandUnitBasisSelect, leadTimeUnitSelect;
+
+    buildInputFields();
+    resetTo(defaultInputs);
+    document.getElementById("loadBenchmarkBtn").addEventListener("click", () => { resetTo(benchmarkInputs); renderApp(); });
+    document.getElementById("resetBtn").addEventListener("click", () => { resetTo(defaultInputs); renderApp(); });
+    scenarioSelect.addEventListener("input", () => { updateVisibleInputs(); renderApp(); });
+    demandUnitBasisSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
+    leadTimeUnitSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
+    inputGrid.addEventListener("input", renderApp);
+    renderApp();
+
+    function buildInputFields() {
+      inputConfig.forEach(config => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "field"; wrapper.dataset.inputId = config.id;
+        if (config.visibleFor) wrapper.dataset.visibleFor = config.visibleFor.join(",");
+        const label = document.createElement("label"); label.htmlFor = config.id;
+        label.innerHTML = `<span class="label-main">${config.label}</span><span class="label-sub">${config.symbol}</span>`;
+        const input = document.createElement("input");
+        input.type = "number"; input.id = config.id; input.step = config.step; input.min = "0";
+        wrapper.appendChild(label); wrapper.appendChild(input);
+        if (config.id === "meanAnnualDemand") {
+          const ic = buildInlineSelect("demandUnitBasis","Demand basis",[["year","Per year"],["month","Per month"]]);
+          demandUnitBasisSelect = ic.select; wrapper.appendChild(ic.wrapper);
+        }
+        if (config.id === "leadTime") {
+          const ic = buildInlineSelect("leadTimeUnit","Lead time unit",[["month","Months"],["year","Years"]]);
+          leadTimeUnitSelect = ic.select; wrapper.appendChild(ic.wrapper);
+        }
+        if (config.hint) {
+          const hint = document.createElement("div"); hint.className = "field-hint";
+          hint.textContent = "Lead-time demand computed automatically."; wrapper.appendChild(hint);
+        }
+        (config.group === "cost" ? costInputGrid : inputGrid).appendChild(wrapper);
+      });
+    }
+
+    function buildInlineSelect(id, labelText, options) {
+      const w = document.createElement("div"); w.className = "field inline-select";
+      const l = document.createElement("label"); l.htmlFor = id;
+      l.innerHTML = `<span class="label-main">${labelText}</span>`;
+      const s = document.createElement("select"); s.id = id;
+      options.forEach(([v,t]) => { const o = document.createElement("option"); o.value=v; o.textContent=t; s.appendChild(o); });
+      w.appendChild(l); w.appendChild(s); return { wrapper:w, select:s };
+    }
+
+    function resetTo(vals) {
+      inputConfig.forEach(({id}) => { document.getElementById(id).value = vals[id]; });
+      demandUnitBasisSelect.value = vals.demandUnitBasis;
+      leadTimeUnitSelect.value = vals.leadTimeUnit;
+      scenarioSelect.value = vals.scenario;
+      updateDynamicLabels(); updateVisibleInputs();
+    }
+
+    function readInputs() {
+      const v = { scenario:scenarioSelect.value, demandUnitBasis:demandUnitBasisSelect.value, leadTimeUnit:leadTimeUnitSelect.value };
+      inputConfig.forEach(({id}) => { const p = parseFloat(document.getElementById(id).value); v[id] = isFinite(p) ? p : 0; });
+      v.meanDemandPerYear   = v.demandUnitBasis === "month" ? v.meanAnnualDemand * 12 : v.meanAnnualDemand;
+      v.demandStdDevPerYear = v.demandUnitBasis === "month" ? v.demandStdDev * Math.sqrt(12) : v.demandStdDev;
+      v.leadTimeYears       = v.leadTimeUnit === "month" ? v.leadTime / 12 : v.leadTime;
+      v.leadTimeStdDevYears = v.leadTimeUnit === "month" ? v.leadTimeStdDev / 12 : v.leadTimeStdDev;
+      return v;
+    }
+
+    function computeScenario(kind, state) {
+      const D = nn(state.meanDemandPerYear), sD = nn(state.demandStdDevPerYear);
+      const L = nn(state.leadTimeYears),     sL = nn(state.leadTimeStdDevYears);
+      const R = state.reorderPoint, q = Math.max(nn(state.orderQuantity), 1e-9);
+      const mu = D * L;
+      let sx = kind === "knownDemand" ? 0 : kind === "uncertainDemand" ? sD*Math.sqrt(L) : Math.sqrt(L*sD*sD + D*D*sL*sL);
+      const ss = R - mu;
+      const z  = sx > 0 ? ss/sx : (R >= mu ? Infinity : -Infinity);
+      const pdf = isFinite(z) ? spdf(z) : 0;
+      const cdf = isFinite(z) ? scdf(z) : (z>0?1:0);
+      const sp  = isFinite(z) ? 1-cdf : (z>0?0:1);
+      const nl  = sx > 0 ? pdf - z*sp : 0;
+      const es  = sx * nl;
+      const cr  = D/q;
+      const poc = state.unitCost*D, sc = state.setupCost*cr;
+      const hc  = state.holdingCostRate*(q/2 + Math.max(ss,0));
+      const shc = state.shortageCost*cr*es;
+      return { kind, meanLeadTimeDemand:mu, sigmaX:sx, safetyStock:ss, z, pdf, cdf, stockoutProbability:sp, nl, expectedShortage:es,
+               costs:{ proportionalOrderCost:poc, setupCost:sc, holdingCost:hc, shortageCost:shc, totalCost:poc+sc+hc+shc }, state };
+    }
+
+    function renderApp() {
+      const state = readInputs(), active = computeScenario(state.scenario, state);
+      const scenarios = [
+        ["Known demand during lead time",            computeScenario("knownDemand", state)],
+        ["Uncertain demand during lead time",        computeScenario("uncertainDemand", state)],
+        ["Uncertain demand and uncertain lead time", computeScenario("uncertainDemandAndLeadTime", state)]
+      ];
+      renderOutputs(active); renderCosts(active); renderComparison(scenarios);
+      renderCurve(active); renderNlPanel(active); renderBenchmarkMessage(active, state);
+    }
+
+    function renderOutputs(m) {
+      const cards = [
+        ["Average lead-time demand","Based on demand rate × lead time", fmt(m.meanLeadTimeDemand), ""],
+        ["Lead-time variability σ<sub>X</sub>","Spread of demand during lead time", fmt(m.sigmaX), ""],
+        ["z-score","Reorder point in standard deviations above mean", isFinite(m.z)?fmt(m.z,4):"N/A", ""],
+        ["P(stockout)","Probability demand exceeds R during lead time", fmt(m.stockoutProbability,4), "prob"],
+        ["NL(z)","Avg overshoot in standardized units — not the tail area", fmt(m.nl,6), "nl"],
+        ["Avg units short n<sub>R</sub>","σ × NL(z) = expected shortage per cycle", fmt(m.expectedShortage,4), "short"],
+        ["Safety stock","R − mean lead-time demand", fmt(m.safetyStock), "ss"]
+      ];
+      outputCards.innerHTML = cards.map(([label, desc, val, concept]) => `
+        <div class="stat-card" ${concept ? `data-concept="${concept}"` : ""}>
+          <div class="stat-label"><span class="stat-main">${label}</span><span class="stat-sub">${desc}</span></div>
+          <div class="stat-value">${val}</div>
+        </div>`).join("");
+      resultInterpretation.innerHTML = buildInterpretation(m);
+    }
+
+    function renderCosts(m) {
+      const c = [
+        ["Proportional order cost", m.costs.proportionalOrderCost, ""],
+        ["Setup cost",              m.costs.setupCost, ""],
+        ["Holding cost",            m.costs.holdingCost, ""],
+        ["Shortage cost",           m.costs.shortageCost, ""],
+        ["Total annual cost",       m.costs.totalCost, "cost-total"]
+      ];
+      costCards.innerHTML = c.map(([l,v,cls]) => `
+        <div class="cost-card ${cls}">
+          <div class="stat-label">${l}</div>
+          <div class="stat-value">${fmt(v,4)}</div>
+        </div>`).join("");
+    }
+
+    function renderComparison(rows) {
+      comparisonTable.innerHTML = rows.map(([label, m]) => `
+        <tr><td>${label}</td><td>${fmt(m.meanLeadTimeDemand)}</td><td>${fmt(m.sigmaX)}</td>
+            <td>${fmt(m.stockoutProbability,4)}</td><td>${fmt(m.expectedShortage,4)}</td></tr>`).join("");
+    }
+
+    function renderNlPanel(m) {
+      const R = m.state.reorderPoint, sigma = m.sigmaX > 0 ? m.sigmaX : Math.max(Math.abs(m.safetyStock),1);
+      const examples = [
+        { title:"Outcome 1 — demand stays left of R", demand:R-0.8*sigma, note:"No stockout. Shortage = 0." },
+        { title:"Outcome 2 — demand just crosses R",  demand:R+0.35*sigma, note:"Small overshoot." },
+        { title:"Outcome 3 — demand far past R",      demand:R+1.4*sigma,  note:"Large overshoot." }
+      ];
+      const dmin = Math.min(...examples.map(e=>e.demand),R) - sigma;
+      const dmax = Math.max(...examples.map(e=>e.demand),R) + sigma;
+      const scale = v => ((v-dmin)/Math.max(dmax-dmin,1e-9))*100;
+      nlStrip.innerHTML = examples.map(ex => {
+        const sh = Math.max(ex.demand-R,0), rp = scale(R), dp = scale(ex.demand);
+        const bl = Math.min(rp,dp), bw = Math.abs(dp-rp);
+        return `<div class="nl-outcome">
+          <div class="nl-outcome-title">${ex.title}</div>
+          <div class="nl-track">
+            <div class="nl-track-label" style="left:${rp}%">R</div>
+            <div class="nl-track-label" style="left:${dp}%">D</div>
+            <div class="nl-reorder-marker" style="left:calc(${rp}% - 1.5px)"></div>
+            <div class="nl-demand-marker"  style="left:calc(${dp}% - 1.5px)"></div>
+            ${sh > 0 ? `<div class="nl-shortage-bar" style="left:${bl}%;width:${bw}%"></div>` : ""}
+          </div>
+          <div class="nl-outcome-note">Shortage = max(D − R, 0) = <strong>${fmt(sh,3)}</strong> &nbsp; ${ex.note}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderCurve(m) {
+      const W=860, H=400, mg={top:36,right:32,bottom:54,left:58};
+      const iW=W-mg.left-mg.right, iH=H-mg.top-mg.bottom;
+      const mean=m.meanLeadTimeDemand, sigma=m.sigmaX, R=m.state.reorderPoint;
+      if (sigma <= 0) {
+        const aY=H-mg.bottom, cx=W/2, rx=cx+Math.max(Math.min(m.safetyStock,120),-120);
+        curveSvg.innerHTML = `
+          <line x1="${mg.left}" y1="${aY}" x2="${W-mg.right}" y2="${aY}" stroke="var(--border-strong)" stroke-width="1.5"/>
+          <line x1="${cx}" y1="${mg.top}" x2="${cx}" y2="${aY}" stroke="var(--mean-line)" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <line x1="${rx}" y1="${mg.top}" x2="${rx}" y2="${aY}" stroke="var(--reorder-line)" stroke-width="2.5"/>
+          <text x="${cx}" y="${mg.top-4}" text-anchor="middle" fill="var(--mean-line)" font-size="13" font-family="Inter,sans-serif">Mean lead-time demand</text>
+          <text x="${rx}" y="${mg.top+18}" text-anchor="start" dx="6" fill="var(--reorder-line)" font-size="13" font-family="Inter,sans-serif">Reorder point R</text>
+          <text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--dim)" font-size="14" font-family="Inter,sans-serif">No bell curve — σ_X = 0 in the known-demand case.</text>`;
+        return;
+      }
+      const dmin = Math.min(mean-4*sigma, R-1.5*sigma);
+      const dmax = Math.max(mean+4*sigma, R+2.5*sigma);
+      const peak = spdf(0)/sigma;
+      const sx = x => mg.left+((x-dmin)/(dmax-dmin))*iW;
+      const sy = y => mg.top+iH-(y/peak)*(iH*0.88);
+      const pts=[], tailPts=[];
+      for (let i=0;i<=200;i++) {
+        const x=dmin+(dmax-dmin)*i/200;
+        const y=spdf((x-mean)/sigma)/sigma;
+        pts.push(`${sx(x)},${sy(y)}`);
+        if (x>=R) tailPts.push(`${sx(x)},${sy(y)}`);
+      }
+      const aY=mg.top+iH, mX=sx(mean), rX=sx(R);
+      const tailPath = tailPts.length ? `M ${sx(R)},${aY} L ${tailPts.join(" L ")} L ${sx(dmax)},${aY} Z` : "";
+      const ssLen = Math.max(m.safetyStock,0);
+      const ssMidX = sx(mean + ssLen/2);
+      // axis ticks
+      const ticks = [-2,-1,0,1,2].map(t => {
+        const v = mean + t*sigma;
+        if (v < dmin || v > dmax) return "";
+        return `<line x1="${sx(v)}" y1="${aY}" x2="${sx(v)}" y2="${aY+5}" stroke="var(--border-strong)" stroke-width="1.2"/>
+                <text x="${sx(v)}" y="${aY+18}" text-anchor="middle" fill="var(--dim)" font-size="11" font-family="Inter,sans-serif">${fmt(v,1)}</text>`;
+      }).join("");
+      curveSvg.innerHTML = `
+        ${ticks}
+        <line x1="${mg.left}" y1="${aY}" x2="${W-mg.right}" y2="${aY}" stroke="var(--border-strong)" stroke-width="1.5"/>
+        ${tailPath ? `<path d="${tailPath}" fill="rgba(229,62,62,0.15)"/>` : ""}
+        <path d="M ${pts.join(" L ")}" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linejoin="round"/>
+        <line x1="${mX}" y1="${mg.top}" x2="${mX}" y2="${aY}" stroke="var(--mean-line)" stroke-width="2" stroke-dasharray="7 5"/>
+        <line x1="${rX}" y1="${mg.top}" x2="${rX}" y2="${aY}" stroke="var(--reorder-line)" stroke-width="2.5"/>
+        ${ssLen > 2 ? `
+          <line x1="${mX}" y1="${aY-26}" x2="${rX}" y2="${aY-26}" stroke="var(--reorder-line)" stroke-width="1.5"/>
+          <polygon points="${rX},${aY-30} ${rX-6},${aY-23} ${rX-6},${aY-37}" fill="var(--reorder-line)"/>
+          <polygon points="${mX},${aY-30} ${mX+6},${aY-23} ${mX+6},${aY-37}" fill="var(--reorder-line)"/>
+          <text x="${ssMidX}" y="${aY-32}" text-anchor="middle" fill="var(--reorder-line)" font-size="12" font-family="Inter,sans-serif" font-weight="600">Safety stock</text>` : ""}
+        <text x="${mX}" y="${mg.top-4}" text-anchor="middle" fill="var(--mean-line)" font-size="13" font-family="Inter,sans-serif" font-weight="600">Mean LT demand</text>
+        <text x="${rX}" y="${mg.top+14}" text-anchor="start" dx="6" fill="var(--reorder-line)" font-size="13" font-family="Inter,sans-serif" font-weight="600">Reorder point R</text>
+        ${tailPts.length ? `<text x="${Math.min(rX+90,W-mg.right-20)}" y="${mg.top+46}" fill="var(--tail-line)" font-size="13" font-family="Inter,sans-serif" font-weight="600">P(stockout)</text>` : ""}`;
+    }
+
+    function renderBenchmarkMessage(m, state) {
+      const active = inputConfig.every(({id}) => Math.abs(state[id]-benchmarkInputs[id]) <= 1e-6)
+        && state.scenario===benchmarkInputs.scenario
+        && state.demandUnitBasis===benchmarkInputs.demandUnitBasis
+        && state.leadTimeUnit===benchmarkInputs.leadTimeUnit;
+      if (!active) { benchmarkNote.textContent = "Load benchmark to validate live outputs against known targets."; return; }
+      const checks = [["z",m.z,benchmarkTargets.z],["NL(z)",m.nl,benchmarkTargets.nl],["n_R",m.expectedShortage,benchmarkTargets.expectedShortage]];
+      benchmarkNote.textContent = "Benchmark: " + checks.map(([l,a,t]) => `${l} = ${fmt(a,6)} (target ${fmt(t,6)})`).join(", ");
+    }
+
+    function updateDynamicLabels() {
+      const db = demandUnitBasisSelect.value==="month" ? "Per month" : "Per year";
+      const tu = leadTimeUnitSelect.value==="month" ? "In months" : "In years";
+      setLabel("meanAnnualDemand","Average demand",db); setLabel("demandStdDev","Demand variability",db);
+      setLabel("leadTime","Lead time",tu); setLabel("leadTimeStdDev","Lead-time variability",tu);
+      setLabel("reorderPoint","Reorder point","Inventory level triggering order");
+      setLabel("orderQuantity","Order quantity","Units per order");
+    }
+    function updateVisibleInputs() {
+      const s = scenarioSelect.value;
+      document.querySelectorAll("[data-input-id]").forEach(f => {
+        const vf = f.dataset.visibleFor;
+        f.classList.toggle("is-hidden", !(!vf || vf.split(",").includes(s)));
+      });
+    }
+    function setLabel(id, main, sub) {
+      const lbl = document.querySelector(`label[for="${id}"]`); if (!lbl) return;
+      const m = lbl.querySelector(".label-main"), s = lbl.querySelector(".label-sub");
+      if (m) m.textContent = main; if (s) s.textContent = sub;
+    }
+    function buildInterpretation(m) {
+      if (!isFinite(m.z)) {
+        return `<div class="result-interpretation-header">Interpretation</div>
+                <div class="result-interpretation-body">Your reorder point is at a deterministic demand level, meaning no bell curve applies.</div>`;
+      }
+      const dir = m.z>=0?"above":"below";
+      const risk = m.stockoutProbability>0.25?"high":m.stockoutProbability>0.1?"meaningful":m.stockoutProbability>0.03?"fairly low":"very low";
+      const shortageMeaning = m.expectedShortage > 50 ? "significant" : m.expectedShortage > 10 ? "moderate" : "relatively small";
+      return `
+        <div class="result-interpretation-header">Interpretation</div>
+        <div class="result-interpretation-body">
+          Your reorder point is ${fmt(Math.abs(m.z), 1)} standard deviations ${dir} mean lead-time demand, so stockout risk is ${risk} but expected shortage is ${shortageMeaning}.
+        </div>
+        <div class="result-interpretation-sub">
+          Increasing the reorder point further reduces shortage risk, but means holding more safety stock.
+        </div>
+      `;
+    }
+    function spdf(z) { return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
+    function scdf(z) {
+      const s=z<0?-1:1, x=Math.abs(z)/Math.sqrt(2);
+      const t=1/(1+0.3275911*x);
+      const e=1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t)*Math.exp(-x*x);
+      return 0.5*(1+s*e);
+    }
+    function nn(v) { return isFinite(v) ? Math.max(v,0) : 0; }
+    function fmt(v, d=2) { if (!isFinite(v)) return "—"; return Number(v).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
+  </script>
+</body>
+</html>

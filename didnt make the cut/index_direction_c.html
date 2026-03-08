@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Normal Loss Function Visualizer — Direction C</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #f0eff4;
+      --surface:    #fafafa;
+      --surface2:   #f4f3f8;
+      --border:     #ddd8e8;
+      --border2:    #ccc8db;
+      --ink:        #2d2a3e;
+      --muted:      #6b6785;
+      --dim:        #a09dba;
+      --accent:     #7048e8;
+      --accent-s:   rgba(112,72,232,0.10);
+      --accent-ss:  rgba(112,72,232,0.06);
+      --tail:       rgba(220,53,69,0.18);
+      --tail-line:  #c0392b;
+      --mean-line:  #0f766e;
+      --mean-s:     rgba(15,118,110,0.12);
+      --ro-line:    #b45309;
+      --ro-s:       rgba(180,83,9,0.10);
+      --pos:        #0f766e;
+      --risk:       #c2410c;
+      --shadow:     0 2px 6px rgba(45,42,62,0.07), 0 8px 24px rgba(45,42,62,0.05);
+      --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+      --font: 'DM Sans', system-ui, sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, #5f35d4 0%, #7048e8 60%, #8b5cf6 100%);
+      padding: 22px 36px 20px;
+      color: white;
+    }
+    .header-inner { max-width: 1280px; margin: 0 auto; }
+    .header-crumb { font-size: 0.73rem; font-weight: 500; opacity: 0.7; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+    h1 { font-size: clamp(1.3rem, 2.5vw, 2rem); font-weight: 700; letter-spacing: -0.02em; color: white; }
+    .header-desc { font-size: 0.875rem; opacity: 0.82; margin-top: 5px; max-width: 68ch; line-height: 1.5; }
+
+    /* Shell + layout */
+    .app-shell { max-width: 1280px; margin: 24px auto 60px; padding: 0 20px; display: grid; gap: 18px; }
+    .layout { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 18px; align-items: start; }
+    .stack { display: grid; gap: 18px; }
+
+    /* Panel */
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow); }
+    .panel-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .panel-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .section-note { font-size: 0.86rem; color: var(--muted); line-height: 1.55; }
+
+    /* Inputs */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .field { display: grid; gap: 4px; }
+    .field.is-hidden { display: none; }
+    .field label { display: grid; gap: 1px; }
+    .label-main { font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+    .label-sub  { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); }
+    .field input, .field select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: var(--r-sm); color: var(--ink); padding: 8px 10px;
+      font-size: 0.88rem; font-family: var(--font);
+      transition: border-color 0.14s, box-shadow 0.14s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-s);
+    }
+    .field-hint { font-size: 0.7rem; color: var(--dim); line-height: 1.4; }
+    .inline-select { margin-top: 6px; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    button {
+      border: 1px solid transparent; border-radius: 999px;
+      padding: 9px 16px; cursor: pointer; font-size: 0.86rem; font-weight: 600;
+      font-family: var(--font); transition: transform 0.12s, box-shadow 0.12s;
+    }
+    button:hover { transform: translateY(-1px); }
+    .primary-btn { background: var(--accent); color: #fff; box-shadow: 0 3px 14px rgba(112,72,232,0.3); }
+    .secondary-btn { background: var(--surface2); color: var(--muted); border-color: var(--border2); }
+
+    .optional-panel { margin-top: 10px; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+    .optional-panel summary {
+      cursor: pointer; list-style: none; padding: 9px 13px;
+      font-size: 0.8rem; font-weight: 600; color: var(--muted); user-select: none;
+    }
+    .optional-panel summary::-webkit-details-marker { display: none; }
+    .optional-panel summary::after { content: "＋"; float: right; }
+    .optional-panel[open] summary::after { content: "—"; }
+    .optional-panel-body { padding: 0 13px 13px; }
+
+    /* Chart */
+    .svg-wrap {
+      border-radius: var(--r-md); border: 1px solid var(--border);
+      overflow: hidden;
+      background: linear-gradient(175deg, #f7f5ff 0%, #faf9fd 60%, #f0f5ff 100%);
+    }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; color: var(--muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Output cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px; }
+    .stat-card {
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 14px; background: var(--surface2); position: relative; overflow: hidden;
+    }
+    .stat-card-accent { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--accent); }
+    .stat-card[data-accent="red"]  .stat-card-accent { background: var(--tail-line); }
+    .stat-card[data-accent="teal"] .stat-card-accent { background: var(--mean-line); }
+    .stat-card[data-accent="amber"].stat-card-accent { background: var(--ro-line); }
+    .stat-card[data-accent="risk"] .stat-card-accent { background: var(--risk); }
+    .stat-label { margin-bottom: 8px; }
+    .stat-main  { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+    .stat-sub   { display: block; font-size: 0.7rem; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+    .stat-value { font-family: var(--mono); font-size: 1.3rem; font-weight: 500; color: var(--accent); letter-spacing: -0.01em; }
+    .stat-card[data-accent="red"]  .stat-value { color: var(--tail-line); }
+    .stat-card[data-accent="risk"] .stat-value { color: var(--risk); }
+    .stat-card[data-accent="teal"] .stat-value { color: var(--pos); }
+    .stat-card[data-accent="amber"].stat-value  { color: var(--ro-line); }
+
+    .result-interpretation {
+      margin-top: 12px; background: var(--accent-ss);
+      border: 1px solid rgba(112,72,232,0.18); border-radius: var(--r-md);
+      padding: 11px 14px; font-size: 0.86rem; color: #4c3a9e; line-height: 1.55;
+    }
+
+    /* Teaching callouts */
+    .teaching-callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .teaching-callout {
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      padding: 11px 12px; background: var(--surface2);
+      font-size: 0.82rem; color: var(--muted); line-height: 1.45;
+    }
+    .callout-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      border-radius: 4px; padding: 2px 7px; margin-bottom: 6px; color: white;
+    }
+    .cb-red   { background: var(--tail-line); }
+    .cb-vi    { background: var(--accent); }
+    .cb-teal  { background: var(--mean-line); }
+    .cb-amber { background: var(--ro-line); }
+
+    /* NL panel */
+    .nl-panel-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 14px; align-items: start; margin-top: 12px; }
+    .nl-summary { display: grid; gap: 9px; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .nl-summary strong { color: var(--ink); }
+    .nl-strip { display: grid; gap: 8px; }
+    .nl-outcome { border: 1px solid var(--border); border-radius: var(--r-md); padding: 11px; background: var(--surface2); }
+    .nl-outcome-title { font-size: 0.76rem; font-weight: 700; color: var(--muted); margin-bottom: 7px; }
+    .nl-track {
+      position: relative; height: 42px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--border); overflow: hidden;
+    }
+    .nl-reorder-marker, .nl-demand-marker { position: absolute; top: 7px; width: 3px; height: 28px; border-radius: 999px; }
+    .nl-reorder-marker { background: var(--ro-line); }
+    .nl-demand-marker  { background: var(--accent); }
+    .nl-shortage-bar {
+      position: absolute; top: 15px; height: 12px; border-radius: 999px;
+      background: rgba(220,53,69,0.28); border: 1px solid rgba(220,53,69,0.4);
+    }
+    .nl-track-label { position: absolute; top: 2px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.85); padding: 0 4px; border-radius: 4px; z-index: 2; white-space: nowrap; }
+    .nl-outcome-note { margin-top: 6px; font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .nl-outcome-note strong { color: var(--ink); }
+
+    /* Math */
+    .math-panel { border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+    .math-panel summary {
+      cursor: pointer; list-style: none; padding: 11px 14px;
+      font-size: 0.83rem; font-weight: 600; color: var(--ink);
+      background: var(--surface2); user-select: none;
+    }
+    .math-panel summary::-webkit-details-marker { display: none; }
+    .math-panel summary::after { content: "expand ▾"; float: right; color: var(--dim); font-weight: 400; font-size: 0.78rem; }
+    .math-panel[open] summary::after { content: "collapse ▴"; }
+    .math-body { padding: 12px 14px; display: grid; gap: 9px; }
+    .math-step { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 11px; background: var(--surface); display: grid; gap: 4px; }
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+      color: white; font-size: 0.72rem; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    }
+    .math-step-title { font-size: 0.8rem; color: var(--muted); }
+    .math-formula { font-family: var(--mono); font-size: 0.95rem; color: var(--ink); line-height: 1.6; }
+    .equation-band {
+      background: var(--accent-ss); border: 1px solid rgba(112,72,232,0.14);
+      border-radius: var(--r-sm); padding: 10px 12px;
+      font-family: var(--mono); font-size: 0.8rem; color: var(--muted); display: grid; gap: 4px;
+    }
+    .benchmark-note { font-size: 0.78rem; color: var(--dim); line-height: 1.45; margin-top: 10px; }
+
+    /* Costs */
+    .cost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+    .cost-card { border: 1px solid var(--border); border-radius: var(--r-md); padding: 13px; background: var(--surface2); }
+    .cost-card .stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 7px; }
+    .cost-card .stat-value { font-family: var(--mono); font-size: 1.15rem; color: var(--ink); }
+    .cost-total { background: var(--accent-s); border-color: rgba(112,72,232,0.25); }
+    .cost-total .stat-value { color: var(--accent); }
+    .footer-note { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-top: 10px; }
+    .math-inline { font-family: var(--mono); font-size: 0.9em; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 9px 10px; border-bottom: 2px solid var(--border2); color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--ink); font-family: var(--mono); font-size: 0.83rem; }
+    td:first-child { font-family: var(--font); color: var(--muted); font-size: 0.82rem; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface2); }
+
+    /* Responsive */
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .nl-panel-grid { grid-template-columns: 1fr; } .teaching-callouts { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .app-shell { padding: 0 12px; } .app-header { padding: 18px 14px; } .field-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-crumb">Inventory Theory · Operations Management</div>
+      <h1>Normal Loss Function Visualizer</h1>
+      <p class="header-desc">Interactive dashboard for exploring how a reorder point on a normal demand distribution determines stockout risk, expected shortage, and inventory costs.</p>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <aside class="stack">
+        <section class="panel">
+          <p class="panel-label">Parameters</p>
+          <div class="field-grid" id="inputGrid"></div>
+          <details class="optional-panel">
+            <summary>Cost parameters</summary>
+            <div class="optional-panel-body"><div class="field-grid" id="costInputGrid"></div></div>
+          </details>
+          <div class="button-row">
+            <button class="primary-btn" id="loadBenchmarkBtn" type="button">Load benchmark</button>
+            <button class="secondary-btn" id="resetBtn" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Uncertainty Model</p>
+          <div class="field">
+            <label for="scenario"><span class="label-main">Scenario</span></label>
+            <select id="scenario">
+              <option value="uncertainDemand">Uncertain demand, known lead time</option>
+              <option value="knownDemand">Known demand, known lead time</option>
+              <option value="uncertainDemandAndLeadTime">Uncertain demand + lead time</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Concept Reference</p>
+          <div class="teaching-callouts">
+            <div class="teaching-callout"><span class="callout-badge cb-red">P(stockout)</span>Shaded red tail. Chance demand exceeds R during lead time.</div>
+            <div class="teaching-callout"><span class="callout-badge cb-vi">NL(z)</span>Average standardized overshoot beyond R. <em>Not</em> the tail area.</div>
+            <div class="teaching-callout"><span class="callout-badge cb-teal">n<sub>R</sub></span>Expected units short = σ<sub>X</sub> × NL(z). Actual shortage units.</div>
+            <div class="teaching-callout"><span class="callout-badge cb-amber">Safety stock</span>R minus mean lead-time demand. Shifts R right, cutting tail.</div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- Main -->
+      <main class="stack">
+
+        <section class="panel">
+          <p class="panel-label">Lead-Time Demand Distribution</p>
+          <p class="section-note" style="margin-bottom:12px">
+            <strong style="color:var(--tail-line)">Red shaded right tail</strong> = P(stockout).
+            The normal loss function NL(z) is <em>not</em> this area —
+            it measures average overshoot beyond R in standardized units, weighted by how far demand exceeds R.
+          </p>
+          <div class="svg-wrap">
+            <svg id="curveSvg" viewBox="0 0 860 400" height="400" aria-label="Bell curve for lead-time demand"></svg>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:var(--mean-line)"></span>Mean LT demand</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--ro-line)"></span>Reorder point / safety stock</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--tail-line)"></span>Stockout probability</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Normal Loss Function — What It Means</p>
+          <p class="section-note"><strong>NL(z) ≠ P(stockout).</strong> It measures the expected overshoot beyond R in standardized units. Three outcomes below show why shortage size differs even within the stockout tail.</p>
+          <div class="nl-panel-grid">
+            <div class="nl-summary">
+              <div><strong>D &lt; R:</strong> no stockout, shortage = 0</div>
+              <div><strong>D just above R:</strong> small overshoot</div>
+              <div><strong>D far above R:</strong> large overshoot</div>
+              <div style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)"><strong>Takeaway:</strong> red tail = probability; NL(z) = size-weighted average of those shortage gaps.</div>
+            </div>
+            <div class="nl-strip" id="nlStrip"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Computed Outputs</p>
+          <div class="stats-grid" id="outputCards"></div>
+          <div class="result-interpretation" id="resultInterpretation"></div>
+          <p class="section-note" style="margin-top:10px">Safety stock → R position → P(stockout) → NL(z) → n<sub>R</sub> = σ·NL(z).</p>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Mathematical Derivation</p>
+          <details class="math-panel">
+            <summary>Show the math trail</summary>
+            <div class="math-body">
+              <div class="math-step"><span class="step-num">1</span><div class="math-step-title">Convert R to z-score</div><div class="math-formula">z = (R − μ<sub>X</sub>) / σ<sub>X</sub></div></div>
+              <div class="math-step"><span class="step-num">2</span><div class="math-step-title">Evaluate normal loss function</div><div class="math-formula">NL(z) = f(z) − z [1 − F(z)]</div></div>
+              <div class="math-step"><span class="step-num">3</span><div class="math-step-title">Convert to actual shortage units</div><div class="math-formula">n<sub>R</sub> = σ<sub>X</sub> · NL(z)</div></div>
+              <div class="equation-band"><div>f(z) = (1/√2π)·exp(−z²/2)</div><div>F(z) = ∫<sub>−∞</sub><sup>z</sup> f(t) dt</div></div>
+            </div>
+          </details>
+          <p class="benchmark-note" id="benchmarkNote"></p>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Cost Breakdown</p>
+          <div class="cost-grid" id="costCards"></div>
+          <p class="footer-note">Model: <span class="math-inline">cD</span> + <span class="math-inline">K(D/Q)</span> + <span class="math-inline">h(Q/2+SS)</span> + <span class="math-inline">p(D/Q)n<sub>R</sub></span></p>
+        </section>
+
+        <section class="panel">
+          <p class="panel-label">Scenario Comparison</p>
+          <table>
+            <thead>
+              <tr><th>Model</th><th>Mean LT demand</th><th>σ<sub>X</sub></th><th>P(stockout)</th><th>Avg units short</th></tr>
+            </thead>
+            <tbody id="comparisonTable"></tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </div>
+
+<script>
+  const inputConfig = [
+    {id:"meanAnnualDemand", label:"Avg demand",          symbol:"D",     step:"0.01",     group:"core"},
+    {id:"demandStdDev",     label:"Demand variability",  symbol:"σ_D",   step:"0.01",     group:"core", visibleFor:["uncertainDemand","uncertainDemandAndLeadTime"]},
+    {id:"leadTime",         label:"Lead time",           symbol:"L",     step:"0.001",    hint:true, group:"core"},
+    {id:"leadTimeStdDev",   label:"LT variability",      symbol:"σ_L",   step:"0.001",    group:"core", visibleFor:["uncertainDemandAndLeadTime"]},
+    {id:"reorderPoint",     label:"Reorder point",       symbol:"R",     step:"0.01",     group:"core"},
+    {id:"orderQuantity",    label:"Order quantity",      symbol:"Q",     step:"0.01",     group:"core"},
+    {id:"setupCost",        label:"Setup cost",          symbol:"K",     step:"0.01",     group:"cost"},
+    {id:"holdingCostRate",  label:"Holding cost rate",   symbol:"h",     step:"0.000001", group:"cost"},
+    {id:"shortageCost",     label:"Shortage penalty",    symbol:"p",     step:"0.01",     group:"cost"},
+    {id:"unitCost",         label:"Unit cost",           symbol:"c",     step:"0.01",     group:"cost"}
+  ];
+  const DEF = {meanAnnualDemand:1000,demandStdDev:220,leadTime:2,leadTimeStdDev:0.05,reorderPoint:260,orderQuantity:800,setupCost:120,holdingCostRate:0.09,shortageCost:3.5,unitCost:0.85,demandUnitBasis:"year",leadTimeUnit:"month",scenario:"uncertainDemand"};
+  const BM  = {meanAnnualDemand:600,demandStdDev:204.12414575745962,leadTime:0.25,leadTimeStdDev:0.05,reorderPoint:272.5683134242594,orderQuantity:5222.329682168751,setupCost:100,holdingCostRate:0.004794552452342729,shortageCost:1,unitCost:0.1,demandUnitBasis:"year",leadTimeUnit:"year",scenario:"uncertainDemand"};
+  const BMT = {z:1.200919303,nl:0.055996749,expectedShortage:5.715144262};
+
+  const $ig=document.getElementById("inputGrid"), $cg=document.getElementById("costInputGrid"),
+        $oc=document.getElementById("outputCards"), $cc=document.getElementById("costCards"),
+        $ct=document.getElementById("comparisonTable"), $svg=document.getElementById("curveSvg"),
+        $nl=document.getElementById("nlStrip"), $ri=document.getElementById("resultInterpretation"),
+        $sc=document.getElementById("scenario"), $bn=document.getElementById("benchmarkNote");
+  let $db, $lu;
+
+  buildFields(); resetTo(DEF);
+  document.getElementById("loadBenchmarkBtn").onclick = ()=>{ resetTo(BM); go(); };
+  document.getElementById("resetBtn").onclick = ()=>{ resetTo(DEF); go(); };
+  $sc.addEventListener("input",()=>{ visibleInputs(); go(); });
+  $db.addEventListener("input",()=>{ dynLabels(); go(); });
+  $lu.addEventListener("input",()=>{ dynLabels(); go(); });
+  $ig.addEventListener("input", go);
+  go();
+
+  function buildFields(){
+    inputConfig.forEach(cfg=>{
+      const w=el("div","field"); w.dataset.inputId=cfg.id;
+      if(cfg.visibleFor) w.dataset.visibleFor=cfg.visibleFor.join(",");
+      const lbl=el("label"); lbl.htmlFor=cfg.id;
+      lbl.innerHTML=`<span class="label-main">${cfg.label}</span><span class="label-sub">${cfg.symbol}</span>`;
+      const inp=el("input"); inp.type="number"; inp.id=cfg.id; inp.step=cfg.step; inp.min="0";
+      w.appendChild(lbl); w.appendChild(inp);
+      if(cfg.id==="meanAnnualDemand"){const s=inlSel("demandUnitBasis","Basis",[["year","Per year"],["month","Per month"]]); $db=s.sel; w.appendChild(s.w);}
+      if(cfg.id==="leadTime"){const s=inlSel("leadTimeUnit","LT unit",[["month","Months"],["year","Years"]]); $lu=s.sel; w.appendChild(s.w);}
+      if(cfg.hint){const h=el("div","field-hint"); h.textContent="Lead-time demand auto-computed."; w.appendChild(h);}
+      (cfg.group==="cost"?$cg:$ig).appendChild(w);
+    });
+  }
+  function inlSel(id,lbl,opts){
+    const w=el("div","field inline-select"), l=el("label"); l.htmlFor=id;
+    l.innerHTML=`<span class="label-main">${lbl}</span>`;
+    const s=el("select"); s.id=id;
+    opts.forEach(([v,t])=>{const o=el("option"); o.value=v; o.textContent=t; s.appendChild(o);});
+    w.appendChild(l); w.appendChild(s); return {w,sel:s};
+  }
+  function el(tag,cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
+
+  function resetTo(v){ inputConfig.forEach(({id})=>{ document.getElementById(id).value=v[id]; }); $db.value=v.demandUnitBasis; $lu.value=v.leadTimeUnit; $sc.value=v.scenario; dynLabels(); visibleInputs(); }
+
+  function readInputs(){
+    const v={scenario:$sc.value,demandUnitBasis:$db.value,leadTimeUnit:$lu.value};
+    inputConfig.forEach(({id})=>{ const p=parseFloat(document.getElementById(id).value); v[id]=isFinite(p)?p:0; });
+    v.meanDemandPerYear   = v.demandUnitBasis==="month"?v.meanAnnualDemand*12:v.meanAnnualDemand;
+    v.demandStdDevPerYear = v.demandUnitBasis==="month"?v.demandStdDev*Math.sqrt(12):v.demandStdDev;
+    v.leadTimeYears       = v.leadTimeUnit==="month"?v.leadTime/12:v.leadTime;
+    v.leadTimeStdDevYears = v.leadTimeUnit==="month"?v.leadTimeStdDev/12:v.leadTimeStdDev;
+    return v;
+  }
+
+  function calc(kind,state){
+    const D=nn(state.meanDemandPerYear),sD=nn(state.demandStdDevPerYear),L=nn(state.leadTimeYears),sL=nn(state.leadTimeStdDevYears);
+    const R=state.reorderPoint, q=Math.max(nn(state.orderQuantity),1e-9), mu=D*L;
+    let sx=kind==="knownDemand"?0:kind==="uncertainDemand"?sD*Math.sqrt(L):Math.sqrt(L*sD*sD+D*D*sL*sL);
+    const ss=R-mu, z=sx>0?ss/sx:(R>=mu?Infinity:-Infinity);
+    const pdf=isFinite(z)?spdf(z):0, cdf=isFinite(z)?scdf(z):(z>0?1:0);
+    const sp=isFinite(z)?1-cdf:(z>0?0:1), nl=sx>0?pdf-z*sp:0, es=sx*nl;
+    const cr=D/q,poc=state.unitCost*D,sc=state.setupCost*cr,hc=state.holdingCostRate*(q/2+Math.max(ss,0)),shc=state.shortageCost*cr*es;
+    return {kind,meanLeadTimeDemand:mu,sigmaX:sx,safetyStock:ss,z,pdf,cdf,stockoutProbability:sp,nl,expectedShortage:es,
+            costs:{proportionalOrderCost:poc,setupCost:sc,holdingCost:hc,shortageCost:shc,totalCost:poc+sc+hc+shc},state};
+  }
+
+  function go(){
+    const s=readInputs(), a=calc(s.scenario,s);
+    const rows=[["Known demand, known LT",calc("knownDemand",s)],["Uncertain demand, known LT",calc("uncertainDemand",s)],["Uncertain demand + LT",calc("uncertainDemandAndLeadTime",s)]];
+    renderOutputs(a); renderCosts(a); renderComparison(rows); renderCurve(a); renderNL(a); renderBM(a,s);
+  }
+
+  function renderOutputs(m){
+    const cards=[
+      ["Avg LT demand","D × L",fmt(m.meanLeadTimeDemand),"teal"],
+      ["LT variability σ<sub>X</sub>","Spread during lead time",fmt(m.sigmaX),"teal"],
+      ["z-score","(R − μ) / σ",isFinite(m.z)?fmt(m.z,4):"—",""],
+      ["P(stockout)","Red tail area",fmt(m.stockoutProbability,4),"red"],
+      ["NL(z)","Avg standardized overshoot — not the tail",fmt(m.nl,6),""],
+      ["n<sub>R</sub> = σ·NL(z)","Expected units short per cycle",fmt(m.expectedShortage,4),"risk"],
+      ["Safety stock","R − mean LT demand",fmt(m.safetyStock),"amber"]
+    ];
+    $oc.innerHTML=cards.map(([lbl,desc,val,acc])=>`
+      <div class="stat-card" ${acc?`data-accent="${acc}"`:""}><div class="stat-card-accent"></div>
+        <div class="stat-label"><span class="stat-main">${lbl}</span><span class="stat-sub">${desc}</span></div>
+        <div class="stat-value">${val}</div></div>`).join("");
+    $ri.textContent=interp(m);
+  }
+
+  function renderCosts(m){
+    const c=[["Proportional order cost",m.costs.proportionalOrderCost,""],["Setup cost",m.costs.setupCost,""],["Holding cost",m.costs.holdingCost,""],["Shortage cost",m.costs.shortageCost,""],["Total cost",m.costs.totalCost,"cost-total"]];
+    $cc.innerHTML=c.map(([l,v,cls])=>`<div class="cost-card ${cls}"><div class="stat-label">${l}</div><div class="stat-value">${fmt(v,4)}</div></div>`).join("");
+  }
+
+  function renderComparison(rows){
+    $ct.innerHTML=rows.map(([l,m])=>`<tr><td>${l}</td><td>${fmt(m.meanLeadTimeDemand)}</td><td>${fmt(m.sigmaX)}</td><td>${fmt(m.stockoutProbability,4)}</td><td>${fmt(m.expectedShortage,4)}</td></tr>`).join("");
+  }
+
+  function renderNL(m){
+    const R=m.state.reorderPoint, sig=m.sigmaX>0?m.sigmaX:Math.max(Math.abs(m.safetyStock),1);
+    const exs=[{t:"Outcome 1 — demand left of R",d:R-0.8*sig,n:"No stockout. Shortage = 0."},
+               {t:"Outcome 2 — demand just right of R",d:R+0.35*sig,n:"Small overshoot."},
+               {t:"Outcome 3 — demand far right of R",d:R+1.4*sig,n:"Large overshoot."}];
+    const dmin=Math.min(...exs.map(e=>e.d),R)-sig, dmax=Math.max(...exs.map(e=>e.d),R)+sig;
+    const sc=v=>((v-dmin)/Math.max(dmax-dmin,1e-9))*100;
+    $nl.innerHTML=exs.map(ex=>{
+      const sh=Math.max(ex.d-R,0),rp=sc(R),dp=sc(ex.d),bl=Math.min(rp,dp),bw=Math.abs(dp-rp);
+      return `<div class="nl-outcome"><div class="nl-outcome-title">${ex.t}</div>
+        <div class="nl-track">
+          <div class="nl-track-label" style="left:${rp}%">R</div>
+          <div class="nl-track-label" style="left:${dp}%">D</div>
+          <div class="nl-reorder-marker" style="left:calc(${rp}% - 1.5px)"></div>
+          <div class="nl-demand-marker"  style="left:calc(${dp}% - 1.5px)"></div>
+          ${sh>0?`<div class="nl-shortage-bar" style="left:${bl}%;width:${bw}%"></div>`:""}
+        </div>
+        <div class="nl-outcome-note">Shortage = <strong>${fmt(sh,3)}</strong> &nbsp; ${ex.n}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderCurve(m){
+    const W=860,H=400,mg={top:36,right:30,bottom:52,left:56};
+    const iW=W-mg.left-mg.right, iH=H-mg.top-mg.bottom;
+    const mean=m.meanLeadTimeDemand, sigma=m.sigmaX, R=m.state.reorderPoint;
+    if(sigma<=0){
+      const aY=H-mg.bottom,cx=W/2,rx=cx+Math.max(Math.min(m.safetyStock,120),-120);
+      $svg.innerHTML=`<line x1="${mg.left}" y1="${aY}" x2="${W-mg.right}" y2="${aY}" stroke="var(--border2)" stroke-width="1.5"/>
+        <line x1="${cx}" y1="${mg.top}" x2="${cx}" y2="${aY}" stroke="var(--mean-line)" stroke-width="2.5" stroke-dasharray="6 5"/>
+        <line x1="${rx}" y1="${mg.top}" x2="${rx}" y2="${aY}" stroke="var(--ro-line)" stroke-width="2.5"/>
+        <text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--dim)" font-size="14" font-family="DM Sans,sans-serif">No bell curve — σ_X = 0 in the known-demand case.</text>
+        <text x="${cx}" y="${mg.top-6}" text-anchor="middle" fill="var(--mean-line)" font-size="13" font-family="DM Sans,sans-serif">Mean LT demand</text>
+        <text x="${rx}" y="${mg.top+18}" text-anchor="start" dx="6" fill="var(--ro-line)" font-size="13" font-family="DM Sans,sans-serif">Reorder point R</text>`;
+      return;
+    }
+    const dmin=Math.min(mean-4*sigma,R-1.5*sigma), dmax=Math.max(mean+4*sigma,R+2.5*sigma);
+    const peak=spdf(0)/sigma;
+    const sx=x=>mg.left+((x-dmin)/(dmax-dmin))*iW, sy=y=>mg.top+iH-(y/peak)*(iH*0.88);
+    const pts=[],tp=[];
+    for(let i=0;i<=200;i++){const x=dmin+(dmax-dmin)*i/200; const y=spdf((x-mean)/sigma)/sigma; pts.push(`${sx(x)},${sy(y)}`); if(x>=R)tp.push(`${sx(x)},${sy(y)}`);}
+    const aY=mg.top+iH, mX=sx(mean), rX=sx(R), ss=Math.max(m.safetyStock,0), ssMid=sx(mean+ss/2);
+    const tailPath=tp.length?`M ${sx(R)},${aY} L ${tp.join(" L ")} L ${sx(dmax)},${aY} Z`:"";
+    // grid lines
+    const grids=[-2,-1,0,1,2].map(t=>{const v=mean+t*sigma; if(v<dmin||v>dmax)return"";
+      return `<line x1="${sx(v)}" y1="${mg.top}" x2="${sx(v)}" y2="${aY}" stroke="rgba(45,42,62,0.05)" stroke-width="1"/>
+              <line x1="${sx(v)}" y1="${aY}" x2="${sx(v)}" y2="${aY+5}" stroke="var(--border2)" stroke-width="1.2"/>
+              <text x="${sx(v)}" y="${aY+18}" text-anchor="middle" fill="var(--dim)" font-size="11" font-family="DM Mono,monospace">${fmt(v,1)}</text>`;}).join("");
+    $svg.innerHTML=`${grids}
+      <line x1="${mg.left}" y1="${aY}" x2="${W-mg.right}" y2="${aY}" stroke="var(--border2)" stroke-width="1.5"/>
+      ${tailPath?`<path d="${tailPath}" fill="var(--tail)"/>`:""}
+      <path d="M ${pts.join(" L ")}" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linejoin="round"/>
+      <line x1="${mX}" y1="${mg.top}" x2="${mX}" y2="${aY}" stroke="var(--mean-line)" stroke-width="2" stroke-dasharray="7 5"/>
+      <line x1="${rX}" y1="${mg.top}" x2="${rX}" y2="${aY}" stroke="var(--ro-line)" stroke-width="2.5"/>
+      ${ss>2?`<line x1="${mX}" y1="${aY-26}" x2="${rX}" y2="${aY-26}" stroke="var(--ro-line)" stroke-width="1.5"/>
+        <polygon points="${rX},${aY-30} ${rX-6},${aY-23} ${rX-6},${aY-37}" fill="var(--ro-line)"/>
+        <polygon points="${mX},${aY-30} ${mX+6},${aY-23} ${mX+6},${aY-37}" fill="var(--ro-line)"/>
+        <text x="${ssMid}" y="${aY-32}" text-anchor="middle" fill="var(--ro-line)" font-size="12" font-family="DM Sans,sans-serif" font-weight="600">Safety stock</text>`:""}
+      <text x="${mX}" y="${mg.top-6}" text-anchor="middle" fill="var(--mean-line)" font-size="13" font-family="DM Sans,sans-serif" font-weight="600">Mean LT demand</text>
+      <text x="${rX}" y="${mg.top+14}" text-anchor="start" dx="6" fill="var(--ro-line)" font-size="13" font-family="DM Sans,sans-serif" font-weight="600">Reorder point R</text>
+      ${tp.length?`<text x="${Math.min(rX+90,W-mg.right-20)}" y="${mg.top+44}" fill="var(--tail-line)" font-size="13" font-family="DM Sans,sans-serif" font-weight="600">P(stockout)</text>`:""}`;
+  }
+
+  function renderBM(m,state){
+    const ok=inputConfig.every(({id})=>Math.abs(state[id]-BM[id])<=1e-6)&&state.scenario===BM.scenario&&state.demandUnitBasis===BM.demandUnitBasis&&state.leadTimeUnit===BM.leadTimeUnit;
+    $bn.textContent=ok?`Benchmark: z=${fmt(m.z,6)} (${fmt(BMT.z,6)}), NL(z)=${fmt(m.nl,6)} (${fmt(BMT.nl,6)}), n_R=${fmt(m.expectedShortage,6)} (${fmt(BMT.expectedShortage,6)})`:"Load benchmark to validate live outputs against known targets.";
+  }
+
+  function dynLabels(){
+    const db=$db.value==="month"?"Per month":"Per year", tu=$lu.value==="month"?"In months":"In years";
+    setL("meanAnnualDemand","Avg demand",db); setL("demandStdDev","Demand variability",db);
+    setL("leadTime","Lead time",tu); setL("leadTimeStdDev","LT variability",tu);
+    setL("reorderPoint","Reorder point","Trigger inventory level");
+    setL("orderQuantity","Order quantity","Units per order");
+  }
+  function visibleInputs(){
+    const s=$sc.value;
+    document.querySelectorAll("[data-input-id]").forEach(f=>{const vf=f.dataset.visibleFor; f.classList.toggle("is-hidden",!(!vf||vf.split(",").includes(s)));});
+  }
+  function setL(id,main,sub){ const l=document.querySelector(`label[for="${id}"]`); if(!l)return; const m=l.querySelector(".label-main"),s=l.querySelector(".label-sub"); if(m)m.textContent=main; if(s)s.textContent=sub; }
+  function interp(m){ if(!isFinite(m.z))return"Reorder point is at a deterministic demand level."; const d=m.z>=0?"above":"below"; const r=m.stockoutProbability>0.25?"high":m.stockoutProbability>0.1?"meaningful":m.stockoutProbability>0.03?"fairly low":"very low"; return `Reorder point is ${fmt(Math.abs(m.z),2)} standard deviations ${d} mean lead-time demand. Stockout probability is ${r}.`; }
+  function spdf(z){ return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
+  function scdf(z){ const s=z<0?-1:1,x=Math.abs(z)/Math.sqrt(2),t=1/(1+0.3275911*x); const e=1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t)*Math.exp(-x*x); return 0.5*(1+s*e); }
+  function nn(v){ return isFinite(v)?Math.max(v,0):0; }
+  function fmt(v,d=2){ if(!isFinite(v))return"—"; return Number(v).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
+</script>
+</body>
+</html>
