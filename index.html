@@ -126,7 +126,9 @@
       gap: 16px;
       align-items: start;
     }
-    .stack { display: grid; gap: 16px; }
+    .layout > * { min-width: 0; }
+    .stack { display: grid; gap: 16px; min-width: 0; }
+    .stack > * { min-width: 0; }
 
     /* ── PANEL ───────────────────────────────── */
     .panel {
@@ -530,6 +532,451 @@
       .field-grid { grid-template-columns: 1fr; }
       .concept-pills { gap: 6px; }
     }
+
+    /* QR LANDSCAPE */
+    .qr-landscape {
+      padding: 20px;
+      overflow: hidden;
+    }
+    .qr-landscape-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .qr-landscape-copy {
+      max-width: 72ch;
+    }
+    .qr-landscape-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,108,176,0.18);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 9px;
+    }
+    .qr-landscape-subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+    .qr-landscape-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 240px;
+    }
+    .qr-legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .qr-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .qr-landscape-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .qr-view-note {
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.45;
+    }
+    .qr-view-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .qr-view-toggle input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .qr-view-toggle label {
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+    }
+    .qr-view-toggle input[type="radio"]:checked + label {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .qr-landscape-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.95fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .qr-chart-card,
+    .qr-side-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-alt);
+      min-width: 0;
+    }
+    .qr-chart-card {
+      padding: 16px;
+    }
+    .qr-chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .qr-chart-copy h3,
+    .qr-side-card h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .qr-chart-copy p,
+    .qr-side-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.5;
+    }
+    .qr-plot-shell {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.88), rgba(249,250,251,0.98)),
+        repeating-linear-gradient(0deg, rgba(26,32,44,0.03), rgba(26,32,44,0.03) 1px, transparent 1px, transparent 36px),
+        repeating-linear-gradient(90deg, rgba(26,32,44,0.03), rgba(26,32,44,0.03) 1px, transparent 1px, transparent 36px);
+      padding: 12px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .qr-plot-stage {
+      min-height: 360px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,247,250,0.92));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .qr-plot-placeholder {
+      width: 100%;
+      min-height: 310px;
+      display: block;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border-strong);
+      color: var(--muted);
+      padding: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .qr-plot-placeholder .js-plotly-plot,
+    .qr-plot-placeholder .plot-container,
+    .qr-plot-placeholder .svg-container {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .qr-plot-fallback {
+      min-height: 308px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+    .qr-plot-fallback strong {
+      display: block;
+      font-size: 0.94rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .qr-plot-fallback span {
+      max-width: 44ch;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .qr-plot-placeholder.qr-plot-hidden {
+      display: none;
+    }
+    .qr-plot-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .qr-note-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .qr-note-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+    .qr-side-stack {
+      display: grid;
+      gap: 14px;
+    }
+    .qr-side-card {
+      padding: 15px;
+      background: var(--surface);
+    }
+    .qr-comparison-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .qr-mini-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 13px;
+      background: var(--surface-alt);
+      min-width: 0;
+    }
+    .qr-mini-card.qr-optimal {
+      border-color: rgba(39,103,73,0.25);
+      background: var(--green-soft);
+    }
+    .qr-mini-head {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .qr-mini-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      min-width: 0;
+    }
+    .qr-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+      white-space: normal;
+      flex-shrink: 1;
+      justify-self: start;
+      align-self: start;
+    }
+    .qr-badge.qr-badge-optimal {
+      border-color: rgba(39,103,73,0.2);
+      background: rgba(39,103,73,0.12);
+      color: var(--green);
+    }
+    .qr-big-number {
+      font-size: clamp(1.12rem, 2.2vw, 1.48rem);
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.03em;
+      font-family: var(--mono);
+      margin-bottom: 8px;
+      overflow-wrap: anywhere;
+    }
+    .qr-params {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      min-width: 0;
+    }
+    .qr-metric-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .qr-savings-banner {
+      margin-top: 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(39,103,73,0.22);
+      background: linear-gradient(180deg, rgba(39,103,73,0.08), rgba(255,255,255,0.96));
+      padding: 12px 14px;
+    }
+    .qr-savings-banner.qr-savings-neutral {
+      border-color: rgba(43,108,176,0.18);
+      background: linear-gradient(180deg, rgba(43,108,176,0.06), rgba(255,255,255,0.96));
+    }
+    .qr-savings-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .qr-savings-banner.qr-savings-neutral .qr-savings-label {
+      color: var(--accent);
+    }
+    .qr-savings-value {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      font-family: var(--mono);
+    }
+    .qr-savings-copy {
+      font-size: 0.79rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .qr-metric {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+    .qr-metric:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+    .qr-metric-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .qr-metric-value {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink);
+      text-align: right;
+      font-family: var(--mono);
+    }
+    .qr-tip-box {
+      margin-top: 14px;
+      border: 1px solid rgba(43,108,176,0.16);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(43,108,176,0.06), rgba(255,255,255,0.96));
+      padding: 14px;
+    }
+    .qr-tip-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .qr-tip-list {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .qr-footline {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.77rem;
+      line-height: 1.45;
+    }
+    @media (max-width: 980px) {
+      .qr-landscape-header,
+      .qr-chart-head {
+        flex-direction: column;
+      }
+      .qr-landscape-legend {
+        justify-content: flex-start;
+        min-width: 0;
+      }
+      .qr-landscape-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      .qr-landscape {
+        padding: 16px;
+      }
+      .qr-comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      .qr-metric {
+        grid-template-columns: 1fr;
+      }
+      .qr-metric-value {
+        text-align: left;
+      }
+      .qr-plot-stage {
+        min-height: 300px;
+        padding: 16px;
+      }
+      .qr-plot-placeholder {
+        min-height: 250px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -734,6 +1181,139 @@
           </p>
         </section>
 
+        <!-- QR Cost Landscape -->
+        <section class="panel qr-landscape" id="qrLandscapeSection">
+          <div class="qr-landscape-header">
+            <div class="qr-landscape-copy">
+              <div class="qr-landscape-eyebrow">Inventory Education · QR System</div>
+              <h2 class="section-heading">QR Cost Landscape</h2>
+              <p class="qr-landscape-subtitle">
+                Explore how total annual cost changes across order quantity Q and reorder point R. Use the default 2D heatmap for a quick read, then switch to the optional 3D surface for shape and depth.
+              </p>
+            </div>
+            <div class="qr-landscape-legend" aria-label="QR landscape legend">
+              <div class="qr-legend-pill"><span class="qr-legend-dot" style="background:var(--ink)"></span>Current policy</div>
+              <div class="qr-legend-pill"><span class="qr-legend-dot" style="background:var(--green)"></span>Optimal policy</div>
+              <div class="qr-legend-pill">Default view: 2D heatmap</div>
+            </div>
+          </div>
+
+          <div class="qr-landscape-controls">
+            <div class="qr-view-note">Read the landscape in 2D first, then switch to 3D when you want to inspect the cost surface from different angles.</div>
+            <div class="qr-view-toggle" role="tablist" aria-label="Toggle QR cost landscape view">
+              <input type="radio" name="qrViewMode" id="qrView2d" checked>
+              <label for="qrView2d">2D heatmap</label>
+              <input type="radio" name="qrViewMode" id="qrView3d">
+              <label for="qrView3d">3D surface</label>
+            </div>
+          </div>
+
+          <div class="qr-landscape-layout">
+            <div class="qr-chart-card">
+              <div class="qr-chart-head">
+                <div class="qr-chart-copy">
+                  <h3>QR cost landscape</h3>
+                  <p id="qrPlotDescription">Lower-cost regions appear cooler in the default 2D heatmap. Current and optimal policy markers update with the active inputs.</p>
+                </div>
+              </div>
+
+              <div class="qr-plot-shell">
+                <div class="qr-plot-stage">
+                  <div id="qrPlot2d" class="qr-plot-placeholder" aria-label="QR cost heatmap">
+                    <div class="qr-plot-fallback">
+                      <strong>2D heatmap loading area</strong>
+                      <span>The 2D QR cost landscape renders here when Plotly is available.</span>
+                    </div>
+                  </div>
+                  <div id="qrPlot3d" class="qr-plot-placeholder qr-plot-hidden" aria-label="QR cost surface">
+                    <div class="qr-plot-fallback">
+                      <strong>3D surface loading area</strong>
+                      <span>The optional 3D QR cost surface renders here after you switch modes.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="qr-plot-footer">
+                  <div class="qr-note-row">
+                    <div class="qr-note-chip">x-axis: reorder point <strong>R</strong></div>
+                    <div class="qr-note-chip">y-axis: order quantity <strong>Q</strong></div>
+                    <div class="qr-note-chip" id="qrEncodingNote">color encodes total annual cost</div>
+                  </div>
+                  <div class="qr-note-row">
+                    <div class="qr-note-chip">Current and optimal markers update live</div>
+                    <div class="qr-note-chip">Switch to 3D for surface view</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="qr-side-stack">
+              <aside class="qr-side-card" aria-label="Current versus optimal comparison panel">
+                <h3>Current vs optimal</h3>
+                <p id="qrComparisonIntro">Compare the current policy against the lowest-cost point found on the QR landscape for the active inputs.</p>
+
+                <div class="qr-comparison-grid">
+                  <div class="qr-mini-card">
+                    <div class="qr-mini-head">
+                      <div class="qr-mini-title">Current policy</div>
+                      <div class="qr-badge" id="qrCurrentBadge">In use</div>
+                    </div>
+                    <div class="qr-big-number" id="qrCurrentCost">--</div>
+                    <div class="qr-params"><span id="qrCurrentQ">Q = --</span><span id="qrCurrentR">R = --</span></div>
+                  </div>
+                  <div class="qr-mini-card qr-optimal">
+                    <div class="qr-mini-head">
+                      <div class="qr-mini-title">Optimal policy</div>
+                      <div class="qr-badge qr-badge-optimal" id="qrOptimalBadge">Best found</div>
+                    </div>
+                    <div class="qr-big-number" id="qrOptimalCost">--</div>
+                    <div class="qr-params"><span id="qrOptimalQ">Q* = --</span><span id="qrOptimalR">R* = --</span></div>
+                  </div>
+                </div>
+
+                <div class="qr-savings-banner" id="qrSavingsBanner">
+                  <div class="qr-savings-label" id="qrSavingsLabel">Annual savings</div>
+                  <div class="qr-savings-value" id="qrSavingsValue">Pending live data</div>
+                  <div class="qr-savings-copy" id="qrSavingsCopy">Savings and improvement messaging will update with the active QR landscape.</div>
+                </div>
+
+                <div class="qr-metric-list">
+                  <div class="qr-metric">
+                    <div class="qr-metric-label">Total annual cost gap</div>
+                    <div class="qr-metric-value" id="qrMetricCostGap">Pending live data</div>
+                  </div>
+                  <div class="qr-metric">
+                    <div class="qr-metric-label">Type 1 service level</div>
+                    <div class="qr-metric-value" id="qrMetricType1">Pending live data</div>
+                  </div>
+                  <div class="qr-metric">
+                    <div class="qr-metric-label">Type 2 fill rate</div>
+                    <div class="qr-metric-value" id="qrMetricType2">Pending live data</div>
+                  </div>
+                </div>
+              </aside>
+
+              <aside class="qr-side-card" aria-label="How to read the QR landscape">
+                <h3>How to read it</h3>
+                <p>This section stays consistent with the app’s current design language and does not redesign the surrounding learning flow.</p>
+                <div class="qr-tip-box">
+                  <div class="qr-tip-title">Student cues</div>
+                  <div class="qr-tip-list">
+                    <div><strong>Look for lower-cost regions:</strong> the final chart will highlight better Q and R combinations without changing the rest of the app.</div>
+                    <div><strong>Increasing Q reduces order frequency:</strong> but it usually raises average on-hand inventory and holding cost.</div>
+                    <div><strong>Increasing R reduces stockouts:</strong> but it also raises inventory carried as protection against uncertainty.</div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <div class="qr-footline">
+            <div>Prototype scope: this section only</div>
+            <div>View states: 2D default · 3D optional · comparison panel updates live</div>
+          </div>
+        </section>
+
         <!-- Comparison -->
         <section class="panel">
           <h2 class="section-heading">Scenario Comparison</h2>
@@ -756,6 +1336,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
   <script>
     /* ── DATA ─────────────────────────────────────────────────────── */
     const inputConfig = [
@@ -798,10 +1379,33 @@
     const resultInterpretation = document.getElementById("resultInterpretation");
     const scenarioSelect = document.getElementById("scenario");
     const benchmarkNote = document.getElementById("benchmarkNote");
+    const qrPlot2d = document.getElementById("qrPlot2d");
+    const qrPlot3d = document.getElementById("qrPlot3d");
+    const qrPlotDescription = document.getElementById("qrPlotDescription");
+    const qrEncodingNote = document.getElementById("qrEncodingNote");
+    const qrViewInputs = document.querySelectorAll('input[name="qrViewMode"]');
+    const qrComparisonIntro = document.getElementById("qrComparisonIntro");
+    const qrCurrentCost = document.getElementById("qrCurrentCost");
+    const qrCurrentQ = document.getElementById("qrCurrentQ");
+    const qrCurrentR = document.getElementById("qrCurrentR");
+    const qrOptimalCost = document.getElementById("qrOptimalCost");
+    const qrOptimalQ = document.getElementById("qrOptimalQ");
+    const qrOptimalR = document.getElementById("qrOptimalR");
+    const qrCurrentBadge = document.getElementById("qrCurrentBadge");
+    const qrOptimalBadge = document.getElementById("qrOptimalBadge");
+    const qrSavingsBanner = document.getElementById("qrSavingsBanner");
+    const qrSavingsLabel = document.getElementById("qrSavingsLabel");
+    const qrSavingsValue = document.getElementById("qrSavingsValue");
+    const qrSavingsCopy = document.getElementById("qrSavingsCopy");
+    const qrMetricCostGap = document.getElementById("qrMetricCostGap");
+    const qrMetricType1 = document.getElementById("qrMetricType1");
+    const qrMetricType2 = document.getElementById("qrMetricType2");
+    const qrLandscapeState = { surface:null };
     let demandUnitBasisSelect, leadTimeUnitSelect;
 
     buildInputFields();
     resetTo(defaultInputs);
+    initQrLandscapeShell();
     document.getElementById("loadBenchmarkBtn").addEventListener("click", () => { resetTo(benchmarkInputs); renderApp(); });
     document.getElementById("resetBtn").addEventListener("click", () => { resetTo(defaultInputs); renderApp(); });
     scenarioSelect.addEventListener("input", () => { updateVisibleInputs(); renderApp(); });
@@ -809,6 +1413,474 @@
     leadTimeUnitSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
     inputGrid.addEventListener("input", renderApp);
     renderApp();
+
+    function initQrLandscapeShell() {
+      qrViewInputs.forEach(input => input.addEventListener("change", updateQrLandscapeView));
+      window.addEventListener("resize", resizeQrPlots);
+      updateQrLandscapeView();
+    }
+
+    function updateQrLandscapeView() {
+      const show3d = document.getElementById("qrView3d").checked;
+      qrPlot2d.classList.toggle("qr-plot-hidden", show3d);
+      qrPlot3d.classList.toggle("qr-plot-hidden", !show3d);
+      qrPlotDescription.textContent = show3d
+        ? "The 3D surface uses height for annual cost, and the vertical guide lines show how high the current and best sampled policies sit above the floor."
+        : "Lower-cost regions appear cooler in the default 2D heatmap, with live markers for the current and best sampled policies.";
+      qrEncodingNote.textContent = show3d
+        ? "height encodes total annual cost"
+        : "color encodes total annual cost";
+      if (show3d && qrLandscapeState.surface) {
+        try {
+          renderQrSurface3d(qrLandscapeState.surface);
+        } catch (error) {
+          renderQrPlotFallback("The 3D QR surface could not be rendered right now.", true);
+        }
+      } else if (!show3d && qrLandscapeState.surface) {
+        try {
+          renderQrHeatmap(qrLandscapeState.surface);
+        } catch (error) {
+          renderQrPlotFallback("The 2D QR heatmap could not be rendered right now.");
+        }
+      }
+    }
+
+    /* QR LANDSCAPE COMPUTATION */
+    function computeCostSurface(source) {
+      const baseState = normalizeQrSurfaceState(source);
+      const gridSize = 30;
+      const currentQ = Math.max(nn(baseState.orderQuantity), 1e-6);
+      const currentR = Math.max(nn(baseState.reorderPoint), 1e-6);
+      const qVals = buildQrGridValues(currentQ, 0.3, 3, gridSize);
+      const rVals = buildQrGridValues(currentR, 0.3, 3, gridSize);
+      const costMatrix = [];
+      let optQ = currentQ;
+      let optR = currentR;
+      let optCost = Infinity;
+      let optType1 = 0;
+      let optType2 = 0;
+      let optimalIsCurrent = false;
+
+      for (let qi = 0; qi < qVals.length; qi++) {
+        const q = qVals[qi];
+        const row = [];
+        for (let ri = 0; ri < rVals.length; ri++) {
+          const r = rVals[ri];
+          const scenario = computeScenario(baseState.scenario, { ...baseState, orderQuantity:q, reorderPoint:r });
+          const totalCost = scenario.costs.totalCost;
+          const type1 = computeType1Service(scenario);
+          const type2 = computeType2Service(scenario, q);
+          row.push(totalCost);
+
+          if (totalCost < optCost) {
+            optCost = totalCost;
+            optQ = q;
+            optR = r;
+            optType1 = type1;
+            optType2 = type2;
+          }
+        }
+        costMatrix.push(row);
+      }
+
+      const currentScenario = computeScenario(baseState.scenario, { ...baseState, orderQuantity:currentQ, reorderPoint:currentR });
+      const curCost = currentScenario.costs.totalCost;
+      const curType1 = computeType1Service(currentScenario);
+      const curType2 = computeType2Service(currentScenario, currentQ);
+      optimalIsCurrent = Math.abs(optQ - currentQ) <= 1e-9 && Math.abs(optR - currentR) <= 1e-9;
+
+      return {
+        qVals,
+        rVals,
+        costMatrix,
+        currentQ,
+        currentR,
+        optQ,
+        optR,
+        optCost,
+        optType1,
+        optType2,
+        curCost,
+        curType1,
+        curType2,
+        optimalIsCurrent
+      };
+    }
+
+    function normalizeQrSurfaceState(source) {
+      if (source && source.state && typeof source.state === "object") {
+        return source.state;
+      }
+      return source;
+    }
+
+    function buildQrGridValues(currentValue, minFactor, maxFactor, gridSize) {
+      const safeCurrent = Math.max(nn(currentValue), 1e-6);
+      const minValue = Math.max(safeCurrent * minFactor, 1e-6);
+      const maxValue = Math.max(safeCurrent * maxFactor, minValue + 1e-6);
+      if (gridSize <= 1) return [safeCurrent];
+      const step = (maxValue - minValue) / (gridSize - 1);
+      return Array.from({ length:gridSize }, (_, i) => minValue + step * i);
+    }
+
+    function computeType1Service(m) {
+      const value = 1 - nn(m.stockoutProbability);
+      return Math.min(Math.max(value, 0), 1);
+    }
+
+    function computeType2Service(m, q) {
+      const safeQ = Math.max(nn(q), 1e-9);
+      const value = 1 - (nn(m.expectedShortage) / safeQ);
+      return Math.min(Math.max(value, 0), 1);
+    }
+
+    function renderQrComparison(surface) {
+      const savings = Math.max(surface.curCost - surface.optCost, 0);
+      const percentSavings = surface.curCost > 0 ? (savings / surface.curCost) * 100 : 0;
+
+      qrCurrentCost.textContent = fmtCurrency(surface.curCost);
+      qrOptimalCost.textContent = fmtCurrency(surface.optCost);
+      qrCurrentQ.textContent = "Q = " + fmt(surface.currentQ, 2);
+      qrCurrentR.textContent = "R = " + fmt(surface.currentR, 2);
+      qrOptimalQ.textContent = "Q* = " + fmt(surface.optQ, 2);
+      qrOptimalR.textContent = "R* = " + fmt(surface.optR, 2);
+      qrMetricCostGap.textContent = surface.optimalIsCurrent
+        ? "No gap at current settings"
+        : fmtCurrency(savings) + " lower at the best point";
+      qrMetricType1.textContent = fmtPct(surface.curType1) + " -> " + fmtPct(surface.optType1);
+      qrMetricType2.textContent = fmtPct(surface.curType2) + " -> " + fmtPct(surface.optType2);
+
+      if (surface.optimalIsCurrent || savings < 1e-6) {
+        qrCurrentBadge.textContent = "In use";
+        qrOptimalBadge.textContent = "Matches current";
+        qrComparisonIntro.textContent = "The current policy already sits at the best point found on the QR landscape for these inputs.";
+        qrSavingsBanner.classList.add("qr-savings-neutral");
+        qrSavingsLabel.textContent = "Already optimized";
+        qrSavingsValue.textContent = "Current policy is already optimal";
+        qrSavingsCopy.textContent = "Changing Q or R away from the current setting would not reduce annual cost on this sampled surface.";
+      } else {
+        qrCurrentBadge.textContent = "In use";
+        qrOptimalBadge.textContent = "Best found";
+        qrComparisonIntro.textContent = "Compare the current policy against the lowest-cost point found on the QR landscape for the active inputs.";
+        qrSavingsBanner.classList.remove("qr-savings-neutral");
+        qrSavingsLabel.textContent = "Annual savings";
+        qrSavingsValue.textContent = fmtCurrency(savings) + (percentSavings >= 0.1 ? "  (" + fmt(percentSavings, 1) + "% lower)" : "");
+        qrSavingsCopy.textContent = "Moving toward the best sampled Q and R reduces annual cost while updating the service tradeoff shown below.";
+      }
+    }
+
+    function renderQrHeatmap(surface) {
+      if (typeof Plotly === "undefined") {
+        renderQrPlotFallback("Plotly failed to load. The QR heatmap cannot be rendered right now.");
+        return;
+      }
+
+      qrPlot3d.classList.add("qr-plot-hidden");
+      qrPlot2d.classList.remove("qr-plot-hidden");
+      if (!qrPlot2d.querySelector(".js-plotly-plot")) qrPlot2d.innerHTML = "";
+      const heatmapTrace = {
+        type:"heatmap",
+        x:surface.rVals,
+        y:surface.qVals,
+        z:surface.costMatrix,
+        colorscale:[
+          [0.00, "#dff3fe"],
+          [0.18, "#bce8ec"],
+          [0.36, "#92d5d1"],
+          [0.54, "#74c5bc"],
+          [0.72, "#bdc389"],
+          [0.86, "#feb15a"],
+          [1.00, "#eb6c4a"]
+        ],
+        hovertemplate:
+          "R: %{x:.2f}<br>" +
+          "Q: %{y:.2f}<br>" +
+          "Total cost: %{z:.2f}<extra>Total annual cost</extra>",
+        colorbar:{
+          title:{ text:"Annual cost" },
+          tickfont:{ color:"#718096", size:11 },
+          titlefont:{ color:"#1a202c", size:12 }
+        }
+      };
+
+      const currentTrace = {
+        type:"scatter",
+        mode:"markers",
+        name:"Current policy",
+        x:[surface.currentR],
+        y:[surface.currentQ],
+        marker:{
+          size:12,
+          color:"#1a202c",
+          line:{ width:3, color:"#ffffff" },
+          symbol:"circle"
+        },
+        hovertemplate:
+          "Current policy<br>" +
+          "R: %{x:.2f}<br>" +
+          "Q: %{y:.2f}<br>" +
+          "Cost: " + surface.curCost.toFixed(2) + "<extra></extra>"
+      };
+
+      const optimalTrace = {
+        type:"scatter",
+        mode:"markers",
+        name:"Optimal policy",
+        x:[surface.optR],
+        y:[surface.optQ],
+        marker:{
+          size:12,
+          color:"#276749",
+          line:{ width:3, color:"#ffffff" },
+          symbol:"diamond"
+        },
+        hovertemplate:
+          "Optimal policy<br>" +
+          "R*: %{x:.2f}<br>" +
+          "Q*: %{y:.2f}<br>" +
+          "Cost: " + surface.optCost.toFixed(2) + "<extra></extra>"
+      };
+
+      Plotly.react(qrPlot2d, [heatmapTrace, currentTrace, optimalTrace], {
+        margin:{ l:66, r:34, t:18, b:54 },
+        paper_bgcolor:"rgba(0,0,0,0)",
+        plot_bgcolor:"rgba(255,255,255,0.92)",
+        legend:{
+          orientation:"h",
+          x:0,
+          y:1.14,
+          bgcolor:"rgba(255,255,255,0.82)",
+          bordercolor:"#e2e8f0",
+          borderwidth:1,
+          font:{ family:"Inter, system-ui, sans-serif", size:12, color:"#1a202c" }
+        },
+        xaxis:{
+          title:{ text:"Reorder point R", font:{ family:"Inter, system-ui, sans-serif", size:12, color:"#1a202c" } },
+          tickfont:{ family:"Inter, system-ui, sans-serif", size:11, color:"#718096" },
+          gridcolor:"rgba(226,232,240,0.7)",
+          zeroline:false
+        },
+        yaxis:{
+          title:{ text:"Order quantity Q", font:{ family:"Inter, system-ui, sans-serif", size:12, color:"#1a202c" } },
+          tickfont:{ family:"Inter, system-ui, sans-serif", size:11, color:"#718096" },
+          gridcolor:"rgba(226,232,240,0.7)",
+          zeroline:false
+        }
+      }, {
+        responsive:true,
+        displayModeBar:false
+      });
+      resizeQrPlots();
+    }
+
+    function renderQrSurface3d(surface) {
+      if (typeof Plotly === "undefined") {
+        renderQrPlotFallback("Plotly failed to load. The 3D QR surface cannot be rendered right now.", true);
+        return;
+      }
+
+      qrPlot2d.classList.add("qr-plot-hidden");
+      qrPlot3d.classList.remove("qr-plot-hidden");
+      if (!qrPlot3d.querySelector(".js-plotly-plot")) qrPlot3d.innerHTML = "";
+      const flatCosts = surface.costMatrix.flat();
+      const minCost = Math.min.apply(null, flatCosts);
+      const maxCost = Math.max.apply(null, flatCosts);
+      const costSpan = Math.max(maxCost - minCost, 1);
+      const baseZ = minCost - costSpan * 0.08;
+      const surfaceTrace = {
+        type:"surface",
+        x:surface.rVals,
+        y:surface.qVals,
+        z:surface.costMatrix,
+        colorscale:[
+          [0.00, "#dff3fe"],
+          [0.18, "#bce8ec"],
+          [0.36, "#92d5d1"],
+          [0.54, "#74c5bc"],
+          [0.72, "#bdc389"],
+          [0.86, "#feb15a"],
+          [1.00, "#eb6c4a"]
+        ],
+        hovertemplate:
+          "R: %{x:.2f}<br>" +
+          "Q: %{y:.2f}<br>" +
+          "Total cost: %{z:.2f}<extra>QR surface</extra>",
+        showscale:true,
+        colorbar:{
+          title:{ text:"Annual cost" },
+          tickfont:{ color:"#718096", size:11 }
+        },
+        contours:{
+          z:{
+            show:true,
+            usecolormap:true,
+            highlightwidth:1,
+            project:{ z:true }
+          }
+        }
+      };
+
+      const currentGuideTrace = {
+        type:"scatter3d",
+        mode:"lines",
+        showlegend:false,
+        hoverinfo:"skip",
+        x:[surface.currentR, surface.currentR],
+        y:[surface.currentQ, surface.currentQ],
+        z:[baseZ, surface.curCost],
+        line:{
+          color:"rgba(26,32,44,0.72)",
+          width:6
+        }
+      };
+
+      const currentTrace = {
+        type:"scatter3d",
+        mode:"markers+text",
+        name:"Current policy",
+        x:[surface.currentR],
+        y:[surface.currentQ],
+        z:[surface.curCost],
+        text:["Current"],
+        textposition:"top center",
+        marker:{
+          size:6,
+          color:"#1a202c",
+          line:{ width:2, color:"#ffffff" },
+          symbol:"circle"
+        },
+        hovertemplate:
+          "Current policy<br>" +
+          "R: %{x:.2f}<br>" +
+          "Q: %{y:.2f}<br>" +
+          "Cost: %{z:.2f}<extra></extra>"
+      };
+
+      const optimalGuideTrace = {
+        type:"scatter3d",
+        mode:"lines",
+        showlegend:false,
+        hoverinfo:"skip",
+        x:[surface.optR, surface.optR],
+        y:[surface.optQ, surface.optQ],
+        z:[baseZ, surface.optCost],
+        line:{
+          color:"rgba(39,103,73,0.8)",
+          width:6
+        }
+      };
+
+      const optimalTrace = {
+        type:"scatter3d",
+        mode:"markers+text",
+        name:"Optimal policy",
+        x:[surface.optR],
+        y:[surface.optQ],
+        z:[surface.optCost],
+        text:["Optimal"],
+        textposition:"top center",
+        marker:{
+          size:6,
+          color:"#276749",
+          line:{ width:2, color:"#ffffff" },
+          symbol:"diamond"
+        },
+        hovertemplate:
+          "Optimal policy<br>" +
+          "R*: %{x:.2f}<br>" +
+          "Q*: %{y:.2f}<br>" +
+          "Cost: %{z:.2f}<extra></extra>"
+      };
+
+      Plotly.react(qrPlot3d, [surfaceTrace, currentGuideTrace, optimalGuideTrace, currentTrace, optimalTrace], {
+        margin:{ l:0, r:0, t:18, b:0 },
+        paper_bgcolor:"rgba(0,0,0,0)",
+        scene:{
+          bgcolor:"rgba(255,255,255,0.92)",
+          aspectmode:"manual",
+          aspectratio:{ x:1.12, y:1.08, z:0.84 },
+          camera:{
+            eye:{ x:1.4, y:1.28, z:1.12 }
+          },
+          xaxis:{
+            title:{ text:"Reorder point R" },
+            backgroundcolor:"rgba(245,247,250,0.75)",
+            gridcolor:"rgba(226,232,240,0.8)",
+            zeroline:false,
+            tickfont:{ color:"#718096", size:10 }
+          },
+          yaxis:{
+            title:{ text:"Order quantity Q" },
+            backgroundcolor:"rgba(245,247,250,0.75)",
+            gridcolor:"rgba(226,232,240,0.8)",
+            zeroline:false,
+            tickfont:{ color:"#718096", size:10 }
+          },
+          zaxis:{
+            title:{ text:"Total annual cost" },
+            backgroundcolor:"rgba(245,247,250,0.75)",
+            gridcolor:"rgba(226,232,240,0.8)",
+            zeroline:false,
+            tickfont:{ color:"#718096", size:10 },
+            range:[baseZ, maxCost]
+          }
+        },
+        legend:{
+          orientation:"h",
+          x:0,
+          y:1.04,
+          bgcolor:"rgba(255,255,255,0.82)",
+          bordercolor:"#e2e8f0",
+          borderwidth:1,
+          font:{ family:"Inter, system-ui, sans-serif", size:12, color:"#1a202c" }
+        }
+      }, {
+        responsive:true,
+        displayModeBar:false
+      });
+      resizeQrPlots();
+    }
+
+    function renderQrPlotFallback(message, is3d=false) {
+      const target = is3d ? qrPlot3d : qrPlot2d;
+      target.innerHTML = `
+        <div class="qr-plot-fallback">
+          <strong>${is3d ? "3D surface unavailable" : "2D heatmap unavailable"}</strong>
+          <span>${message}</span>
+        </div>`;
+    }
+
+    function resizeQrPlots() {
+      if (typeof Plotly === "undefined" || !Plotly.Plots) return;
+      requestAnimationFrame(() => {
+        if (qrPlot2d && !qrPlot2d.classList.contains("qr-plot-hidden") && qrPlot2d.querySelector(".js-plotly-plot")) {
+          Plotly.Plots.resize(qrPlot2d);
+        }
+        if (qrPlot3d && !qrPlot3d.classList.contains("qr-plot-hidden") && qrPlot3d.querySelector(".js-plotly-plot")) {
+          Plotly.Plots.resize(qrPlot3d);
+        }
+      });
+    }
+
+    function renderQrLandscape(active) {
+      const surface = computeCostSurface(active);
+      qrLandscapeState.surface = surface;
+      renderQrComparison(surface);
+      if (document.getElementById("qrView3d").checked) {
+        try {
+          renderQrSurface3d(surface);
+        } catch (error) {
+          renderQrPlotFallback("The 3D QR surface could not be rendered right now.", true);
+        }
+      } else {
+        try {
+          renderQrHeatmap(surface);
+        } catch (error) {
+          renderQrPlotFallback("The 2D QR heatmap could not be rendered right now.");
+        }
+      }
+      return surface;
+    }
 
     function buildInputFields() {
       inputConfig.forEach(config => {
@@ -891,6 +1963,7 @@
         ["Uncertain demand during lead time",        computeScenario("uncertainDemand", state)],
         ["Uncertain demand and uncertain lead time", computeScenario("uncertainDemandAndLeadTime", state)]
       ];
+      renderQrLandscape(active);
       renderOutputs(active); renderCosts(active); renderComparison(scenarios);
       renderCurve(active); renderNlPanel(active); renderBenchmarkMessage(active, state);
     }
@@ -1084,6 +2157,8 @@
     }
     function nn(v) { return isFinite(v) ? Math.max(v,0) : 0; }
     function fmt(v, d=2) { if (!isFinite(v)) return "—"; return Number(v).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
+    function fmtCurrency(v, d=0) { if (!isFinite(v)) return "—"; return "$" + Number(v).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}); }
+    function fmtPct(v, d=1) { if (!isFinite(v)) return "—"; return (Number(v) * 100).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}) + "%"; }
   </script>
 </body>
 </html>
