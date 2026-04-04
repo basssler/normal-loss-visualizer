@@ -625,12 +625,19 @@
       pointer-events: none;
     }
     .qr-view-toggle label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 999px;
-      padding: 8px 14px;
+      min-height: 44px;
+      min-width: 122px;
+      padding: 10px 16px;
       color: var(--muted);
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
       transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
     }
     .qr-view-toggle input[type="radio"]:checked + label {
@@ -687,7 +694,7 @@
       overflow: hidden;
     }
     .qr-plot-stage {
-      min-height: 360px;
+      min-height: 328px;
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,247,250,0.92));
@@ -700,7 +707,7 @@
     }
     .qr-plot-placeholder {
       width: 100%;
-      min-height: 310px;
+      min-height: 280px;
       display: block;
       border-radius: var(--radius-md);
       border: 1px dashed var(--border-strong);
@@ -762,13 +769,15 @@
       font-size: 0.74rem;
       font-weight: 600;
     }
-    .qr-side-stack {
-      display: grid;
-      gap: 14px;
-    }
     .qr-side-card {
       padding: 15px;
       background: var(--surface);
+    }
+    .qr-inline-read {
+      margin-top: 14px;
+    }
+    .qr-landscape-layout > aside.qr-side-card + aside.qr-side-card {
+      display: none;
     }
     .qr-comparison-grid {
       display: grid;
@@ -906,6 +915,15 @@
       text-align: right;
       font-family: var(--mono);
     }
+    .qr-service-up {
+      color: var(--green);
+    }
+    .qr-service-down {
+      color: #c05621;
+    }
+    .qr-service-flat {
+      color: var(--muted);
+    }
     .qr-tip-box {
       margin-top: 14px;
       border: 1px solid rgba(43,108,176,0.16);
@@ -931,6 +949,13 @@
       font-size: 0.8rem;
       line-height: 1.5;
     }
+    .qr-inline-read .qr-tip-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .qr-inline-read .qr-tip-list > div {
+      min-width: 0;
+    }
     .qr-footline {
       margin-top: 16px;
       padding-top: 12px;
@@ -955,6 +980,9 @@
       .qr-landscape-layout {
         grid-template-columns: 1fr;
       }
+      .qr-inline-read .qr-tip-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
     @media (max-width: 640px) {
       .qr-landscape {
@@ -970,11 +998,14 @@
         text-align: left;
       }
       .qr-plot-stage {
-        min-height: 300px;
+        min-height: 280px;
         padding: 16px;
       }
       .qr-plot-placeholder {
-        min-height: 250px;
+        min-height: 230px;
+      }
+      .qr-inline-read .qr-tip-list {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -1245,10 +1276,22 @@
                   </div>
                 </div>
               </div>
+
+              <aside class="qr-side-card qr-inline-read" aria-label="How to read the QR landscape">
+                <h3>How to read it</h3>
+                <p>Start by finding the lowest-cost basin, then compare how moving Q and R changes both annual cost and service.</p>
+                <div class="qr-tip-box">
+                  <div class="qr-tip-title">Student cues</div>
+                  <div class="qr-tip-list">
+                    <div><strong>Look for lower-cost regions:</strong> the coolest 2D zone and lowest 3D basin indicate better Q and R combinations for the active inputs.</div>
+                    <div><strong>Increasing Q reduces order frequency:</strong> but it usually raises average on-hand inventory and holding cost.</div>
+                    <div><strong>Increasing R reduces stockouts:</strong> but it also raises inventory carried as protection against uncertainty.</div>
+                  </div>
+                </div>
+              </aside>
             </div>
 
-            <div class="qr-side-stack">
-              <aside class="qr-side-card" aria-label="Current versus optimal comparison panel">
+            <aside class="qr-side-card" aria-label="Current versus optimal comparison panel">
                 <h3>Current vs optimal</h3>
                 <p id="qrComparisonIntro">Compare the current policy against the lowest-cost point found on the QR landscape for the active inputs.</p>
 
@@ -1309,7 +1352,7 @@
           </div>
 
           <div class="qr-footline">
-            <div>Prototype scope: this section only</div>
+            <div>Use the heatmap for the fastest read, then switch to 3D when you want to inspect the basin shape.</div>
             <div>View states: 2D default · 3D optional · comparison panel updates live</div>
           </div>
         </section>
@@ -1400,6 +1443,8 @@
     const qrMetricCostGap = document.getElementById("qrMetricCostGap");
     const qrMetricType1 = document.getElementById("qrMetricType1");
     const qrMetricType2 = document.getElementById("qrMetricType2");
+    const qrView2d = document.getElementById("qrView2d");
+    const qrView3d = document.getElementById("qrView3d");
     const qrLandscapeState = { surface:null };
     let demandUnitBasisSelect, leadTimeUnitSelect;
 
@@ -1412,16 +1457,26 @@
     demandUnitBasisSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
     leadTimeUnitSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
     inputGrid.addEventListener("input", renderApp);
+    costInputGrid.addEventListener("input", renderApp);
     renderApp();
 
     function initQrLandscapeShell() {
       qrViewInputs.forEach(input => input.addEventListener("change", updateQrLandscapeView));
+      document.querySelectorAll('.qr-view-toggle label').forEach(label => {
+        label.addEventListener("click", () => {
+          const targetId = label.getAttribute("for");
+          const target = document.getElementById(targetId);
+          if (!target) return;
+          target.checked = true;
+          updateQrLandscapeView();
+        });
+      });
       window.addEventListener("resize", resizeQrPlots);
       updateQrLandscapeView();
     }
 
     function updateQrLandscapeView() {
-      const show3d = document.getElementById("qrView3d").checked;
+      const show3d = qrView3d.checked;
       qrPlot2d.classList.toggle("qr-plot-hidden", show3d);
       qrPlot3d.classList.toggle("qr-plot-hidden", !show3d);
       qrPlotDescription.textContent = show3d
@@ -1534,6 +1589,42 @@
       return Math.min(Math.max(value, 0), 1);
     }
 
+    function buildQrBasinColorMap(costMatrix) {
+      const flatCosts = costMatrix.flat();
+      const minCost = Math.min.apply(null, flatCosts);
+      const maxCost = Math.max.apply(null, flatCosts);
+      const costSpan = Math.max(maxCost - minCost, 1);
+      const emphasize = (value) => {
+        const t = Math.min(Math.max((value - minCost) / costSpan, 0), 1);
+        if (t <= 0.18) return (t / 0.18) * 0.42;
+        if (t <= 0.42) return 0.42 + ((t - 0.18) / 0.24) * 0.25;
+        return 0.67 + Math.pow((t - 0.42) / 0.58, 1.45) * 0.33;
+      };
+      const surfaceColor = costMatrix.map(row => row.map(emphasize));
+      const tickCosts = [0, 0.08, 0.18, 0.35, 0.6, 1].map(stop => minCost + costSpan * stop);
+      return {
+        minCost,
+        maxCost,
+        costSpan,
+        surfaceColor,
+        cmin:0,
+        cmax:1,
+        tickvals: tickCosts.map(emphasize),
+        ticktext: tickCosts.map(value => fmt(value, 0))
+      };
+    }
+
+    function formatServiceDelta(currentValue, optimalValue) {
+      const delta = optimalValue - currentValue;
+      if (Math.abs(delta) < 0.0005) {
+        return `<span class="qr-service-flat">${fmtPct(currentValue)} → ${fmtPct(optimalValue)} (no change)</span>`;
+      }
+      if (delta > 0) {
+        return `<span class="qr-service-up">${fmtPct(currentValue)} ↑ ${fmtPct(optimalValue)} (improves)</span>`;
+      }
+      return `<span class="qr-service-down">${fmtPct(currentValue)} ↓ ${fmtPct(optimalValue)} (tradeoff)</span>`;
+    }
+
     function renderQrComparison(surface) {
       const savings = Math.max(surface.curCost - surface.optCost, 0);
       const percentSavings = surface.curCost > 0 ? (savings / surface.curCost) * 100 : 0;
@@ -1547,8 +1638,8 @@
       qrMetricCostGap.textContent = surface.optimalIsCurrent
         ? "No gap at current settings"
         : fmtCurrency(savings) + " lower at the best point";
-      qrMetricType1.textContent = fmtPct(surface.curType1) + " -> " + fmtPct(surface.optType1);
-      qrMetricType2.textContent = fmtPct(surface.curType2) + " -> " + fmtPct(surface.optType2);
+      qrMetricType1.innerHTML = formatServiceDelta(surface.curType1, surface.optType1);
+      qrMetricType2.innerHTML = formatServiceDelta(surface.curType2, surface.optType2);
 
       if (surface.optimalIsCurrent || savings < 1e-6) {
         qrCurrentBadge.textContent = "In use";
@@ -1577,7 +1668,8 @@
 
       qrPlot3d.classList.add("qr-plot-hidden");
       qrPlot2d.classList.remove("qr-plot-hidden");
-      if (!qrPlot2d.querySelector(".js-plotly-plot")) qrPlot2d.innerHTML = "";
+      Plotly.purge(qrPlot2d);
+      qrPlot2d.innerHTML = "";
       const heatmapTrace = {
         type:"heatmap",
         x:surface.rVals,
@@ -1603,45 +1695,65 @@
         }
       };
 
-      const currentTrace = {
-        type:"scatter",
-        mode:"markers",
-        name:"Current policy",
-        x:[surface.currentR],
-        y:[surface.currentQ],
-        marker:{
-          size:12,
-          color:"#1a202c",
-          line:{ width:3, color:"#ffffff" },
-          symbol:"circle"
-        },
-        hovertemplate:
-          "Current policy<br>" +
-          "R: %{x:.2f}<br>" +
-          "Q: %{y:.2f}<br>" +
-          "Cost: " + surface.curCost.toFixed(2) + "<extra></extra>"
-      };
+      const markerTraces = surface.optimalIsCurrent
+        ? [{
+            type:"scatter",
+            mode:"markers",
+            name:"Current = optimal",
+            x:[surface.currentR],
+            y:[surface.currentQ],
+            marker:{
+              size:14,
+              color:"#276749",
+              line:{ width:4, color:"#1a202c" },
+              symbol:"diamond"
+            },
+            hovertemplate:
+              "Current = optimal<br>" +
+              "R: %{x:.2f}<br>" +
+              "Q: %{y:.2f}<br>" +
+              "Cost: " + surface.curCost.toFixed(2) + "<extra></extra>"
+          }]
+        : [
+            {
+              type:"scatter",
+              mode:"markers",
+              name:"Current policy",
+              x:[surface.currentR],
+              y:[surface.currentQ],
+              marker:{
+                size:12,
+                color:"#1a202c",
+                line:{ width:3, color:"#ffffff" },
+                symbol:"circle"
+              },
+              hovertemplate:
+                "Current policy<br>" +
+                "R: %{x:.2f}<br>" +
+                "Q: %{y:.2f}<br>" +
+                "Cost: " + surface.curCost.toFixed(2) + "<extra></extra>"
+            },
+            {
+              type:"scatter",
+              mode:"markers",
+              name:"Optimal policy",
+              x:[surface.optR],
+              y:[surface.optQ],
+              marker:{
+                size:12,
+                color:"#276749",
+                line:{ width:3, color:"#ffffff" },
+                symbol:"diamond"
+              },
+              hovertemplate:
+                "Optimal policy<br>" +
+                "R*: %{x:.2f}<br>" +
+                "Q*: %{y:.2f}<br>" +
+                "Cost: " + surface.optCost.toFixed(2) + "<extra></extra>"
+            }
+          ];
 
-      const optimalTrace = {
-        type:"scatter",
-        mode:"markers",
-        name:"Optimal policy",
-        x:[surface.optR],
-        y:[surface.optQ],
-        marker:{
-          size:12,
-          color:"#276749",
-          line:{ width:3, color:"#ffffff" },
-          symbol:"diamond"
-        },
-        hovertemplate:
-          "Optimal policy<br>" +
-          "R*: %{x:.2f}<br>" +
-          "Q*: %{y:.2f}<br>" +
-          "Cost: " + surface.optCost.toFixed(2) + "<extra></extra>"
-      };
-
-      Plotly.react(qrPlot2d, [heatmapTrace, currentTrace, optimalTrace], {
+      Plotly.newPlot(qrPlot2d, [heatmapTrace].concat(markerTraces), {
         margin:{ l:66, r:34, t:18, b:54 },
         paper_bgcolor:"rgba(0,0,0,0)",
         plot_bgcolor:"rgba(255,255,255,0.92)",
@@ -1681,34 +1793,47 @@
 
       qrPlot2d.classList.add("qr-plot-hidden");
       qrPlot3d.classList.remove("qr-plot-hidden");
-      if (!qrPlot3d.querySelector(".js-plotly-plot")) qrPlot3d.innerHTML = "";
-      const flatCosts = surface.costMatrix.flat();
-      const minCost = Math.min.apply(null, flatCosts);
-      const maxCost = Math.max.apply(null, flatCosts);
-      const costSpan = Math.max(maxCost - minCost, 1);
+      Plotly.purge(qrPlot3d);
+      qrPlot3d.innerHTML = "";
+      const colorMap = buildQrBasinColorMap(surface.costMatrix);
+      const minCost = colorMap.minCost;
+      const maxCost = colorMap.maxCost;
+      const costSpan = colorMap.costSpan;
       const baseZ = minCost - costSpan * 0.08;
       const surfaceTrace = {
         type:"surface",
         x:surface.rVals,
         y:surface.qVals,
         z:surface.costMatrix,
+        surfacecolor: colorMap.surfaceColor,
         colorscale:[
-          [0.00, "#dff3fe"],
-          [0.18, "#bce8ec"],
-          [0.36, "#92d5d1"],
-          [0.54, "#74c5bc"],
-          [0.72, "#bdc389"],
-          [0.86, "#feb15a"],
-          [1.00, "#eb6c4a"]
+          [0.00, "#c4e3f1"],
+          [0.10, "#a8d5e8"],
+          [0.22, "#7dc8d9"],
+          [0.38, "#4fb8bc"],
+          [0.54, "#238f9d"],
+          [0.72, "#d1c86f"],
+          [0.88, "#ffab54"],
+          [1.00, "#e45b3a"]
         ],
+        cmin: colorMap.cmin,
+        cmax: colorMap.cmax,
         hovertemplate:
-          "R: %{x:.2f}<br>" +
-          "Q: %{y:.2f}<br>" +
-          "Total cost: %{z:.2f}<extra>QR surface</extra>",
+          "R %{x:.0f}<br>" +
+          "Q %{y:.0f}<br>" +
+          "Cost %{z:.0f}<extra></extra>",
+        hoverlabel:{
+          bgcolor:"rgba(26,32,44,0.88)",
+          bordercolor:"rgba(255,255,255,0.9)",
+          font:{ color:"#ffffff", size:12, family:"Inter, system-ui, sans-serif" },
+          align:"left"
+        },
         showscale:true,
         colorbar:{
           title:{ text:"Annual cost" },
-          tickfont:{ color:"#718096", size:11 }
+          tickfont:{ color:"#718096", size:11 },
+          tickvals: colorMap.tickvals,
+          ticktext: colorMap.ticktext
         },
         contours:{
           z:{
@@ -1734,26 +1859,19 @@
         }
       };
 
-      const currentTrace = {
+      const currentBaseTrace = {
         type:"scatter3d",
-        mode:"markers+text",
-        name:"Current policy",
+        mode:"markers",
+        showlegend:false,
+        hoverinfo:"skip",
         x:[surface.currentR],
         y:[surface.currentQ],
-        z:[surface.curCost],
-        text:["Current"],
-        textposition:"top center",
+        z:[baseZ],
         marker:{
-          size:6,
-          color:"#1a202c",
-          line:{ width:2, color:"#ffffff" },
+          size:5,
+          color:"rgba(26,32,44,0.55)",
           symbol:"circle"
-        },
-        hovertemplate:
-          "Current policy<br>" +
-          "R: %{x:.2f}<br>" +
-          "Q: %{y:.2f}<br>" +
-          "Cost: %{z:.2f}<extra></extra>"
+        }
       };
 
       const optimalGuideTrace = {
@@ -1770,33 +1888,127 @@
         }
       };
 
-      const optimalTrace = {
+      const optimalBaseTrace = {
         type:"scatter3d",
-        mode:"markers+text",
-        name:"Optimal policy",
+        mode:"markers",
+        showlegend:false,
+        hoverinfo:"skip",
         x:[surface.optR],
         y:[surface.optQ],
-        z:[surface.optCost],
-        text:["Optimal"],
-        textposition:"top center",
+        z:[baseZ],
         marker:{
-          size:6,
-          color:"#276749",
-          line:{ width:2, color:"#ffffff" },
+          size:5,
+          color:"rgba(39,103,73,0.58)",
           symbol:"diamond"
-        },
-        hovertemplate:
-          "Optimal policy<br>" +
-          "R*: %{x:.2f}<br>" +
-          "Q*: %{y:.2f}<br>" +
-          "Cost: %{z:.2f}<extra></extra>"
+        }
       };
 
-      Plotly.react(qrPlot3d, [surfaceTrace, currentGuideTrace, optimalGuideTrace, currentTrace, optimalTrace], {
+      const markerTraces = surface.optimalIsCurrent
+        ? [{
+            type:"scatter3d",
+            mode:"markers+text",
+            name:"Current = optimal",
+            x:[surface.currentR],
+            y:[surface.currentQ],
+            z:[surface.curCost],
+            text:["Current = optimal"],
+            textposition:"top center",
+            textfont:{
+              color:"#276749",
+              size:14,
+              family:"Inter, system-ui, sans-serif"
+            },
+            marker:{
+              size:10,
+              color:"#276749",
+              line:{ width:3, color:"#1a202c" },
+              symbol:"diamond"
+            },
+            hovertemplate:
+              "Current = optimal<br>" +
+              "R %{x:.0f}<br>" +
+              "Q %{y:.0f}<br>" +
+              "Cost %{z:.0f}<extra></extra>",
+            hoverlabel:{
+              bgcolor:"rgba(39,103,73,0.92)",
+              bordercolor:"#ffffff",
+              font:{ color:"#ffffff", size:12, family:"Inter, system-ui, sans-serif" },
+              align:"left"
+            }
+          }]
+        : [
+            {
+              type:"scatter3d",
+              mode:"markers+text",
+              name:"Current policy",
+              x:[surface.currentR],
+              y:[surface.currentQ],
+              z:[surface.curCost],
+              text:["Current"],
+              textposition:"top center",
+              textfont:{
+                color:"#1a202c",
+                size:14,
+                family:"Inter, system-ui, sans-serif"
+              },
+              marker:{
+                size:9,
+                color:"#1a202c",
+                line:{ width:3, color:"#ffffff" },
+                symbol:"circle"
+              },
+              hovertemplate:
+                "Current policy<br>" +
+                "R %{x:.0f}<br>" +
+                "Q %{y:.0f}<br>" +
+                "Cost %{z:.0f}<extra></extra>",
+              hoverlabel:{
+                bgcolor:"rgba(26,32,44,0.92)",
+                bordercolor:"#ffffff",
+                font:{ color:"#ffffff", size:12, family:"Inter, system-ui, sans-serif" },
+                align:"left"
+              }
+            },
+            {
+              type:"scatter3d",
+              mode:"markers+text",
+              name:"Optimal policy",
+              x:[surface.optR],
+              y:[surface.optQ],
+              z:[surface.optCost],
+              text:["Optimal"],
+              textposition:"top center",
+              textfont:{
+                color:"#276749",
+                size:14,
+                family:"Inter, system-ui, sans-serif"
+              },
+              marker:{
+                size:9,
+                color:"#276749",
+                line:{ width:3, color:"#ffffff" },
+                symbol:"diamond"
+              },
+              hovertemplate:
+                "Optimal policy<br>" +
+                "R* %{x:.0f}<br>" +
+                "Q* %{y:.0f}<br>" +
+                "Cost %{z:.0f}<extra></extra>",
+              hoverlabel:{
+                bgcolor:"rgba(39,103,73,0.92)",
+                bordercolor:"#ffffff",
+                font:{ color:"#ffffff", size:12, family:"Inter, system-ui, sans-serif" },
+                align:"left"
+              }
+            }
+          ];
+
+      const traces = [surfaceTrace, currentGuideTrace, optimalGuideTrace, currentBaseTrace, optimalBaseTrace].concat(markerTraces);
+      Plotly.newPlot(qrPlot3d, traces, {
         margin:{ l:0, r:0, t:18, b:0 },
         paper_bgcolor:"rgba(0,0,0,0)",
         scene:{
-          bgcolor:"rgba(255,255,255,0.92)",
+          bgcolor:"rgba(243,247,250,0.98)",
           aspectmode:"manual",
           aspectratio:{ x:1.12, y:1.08, z:0.84 },
           camera:{
@@ -1804,21 +2016,21 @@
           },
           xaxis:{
             title:{ text:"Reorder point R" },
-            backgroundcolor:"rgba(245,247,250,0.75)",
+            backgroundcolor:"rgba(236,242,247,0.9)",
             gridcolor:"rgba(226,232,240,0.8)",
             zeroline:false,
             tickfont:{ color:"#718096", size:10 }
           },
           yaxis:{
             title:{ text:"Order quantity Q" },
-            backgroundcolor:"rgba(245,247,250,0.75)",
+            backgroundcolor:"rgba(236,242,247,0.9)",
             gridcolor:"rgba(226,232,240,0.8)",
             zeroline:false,
             tickfont:{ color:"#718096", size:10 }
           },
           zaxis:{
             title:{ text:"Total annual cost" },
-            backgroundcolor:"rgba(245,247,250,0.75)",
+            backgroundcolor:"rgba(236,242,247,0.9)",
             gridcolor:"rgba(226,232,240,0.8)",
             zeroline:false,
             tickfont:{ color:"#718096", size:10 },
