@@ -184,6 +184,44 @@
     .field-hint { font-size: 0.72rem; color: var(--dim); line-height: 1.4; }
     .inline-select { margin-top: 6px; }
     .button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .preset-stack {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .preset-heading {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .preset-button-row { margin-top: 0; }
+    .preset-btn {
+      flex: 1 1 160px;
+      padding: 9px 12px;
+      font-size: 0.78rem;
+    }
+    .preset-btn.is-active,
+    .preset-btn[aria-pressed="true"] {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 3px 12px rgba(43,108,176,0.25);
+    }
+    .preset-helper {
+      font-size: 0.74rem;
+      color: var(--dim);
+      line-height: 1.4;
+      margin-top: 8px;
+    }
+    .preset-status {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 6px;
+    }
     button {
       border: 1px solid transparent;
       border-radius: 999px;
@@ -1050,6 +1088,15 @@
             <button class="primary-btn" id="loadBenchmarkBtn" type="button">Load benchmark</button>
             <button class="secondary-btn" id="resetBtn" type="button">Reset</button>
           </div>
+          <div class="preset-stack" aria-label="Harvey demo presets">
+            <div class="preset-heading">Harvey presets</div>
+            <div class="button-row preset-button-row" id="presetButtonRow"></div>
+            <div class="button-row preset-button-row">
+              <button class="primary-btn preset-btn" id="compareHarveyPresetsBtn" type="button">Compare both Harvey presets</button>
+            </div>
+            <p class="preset-helper">Harvey mustard demo presets for Nahmias Example 5.4</p>
+            <p class="preset-status" id="presetStatusNote" hidden></p>
+          </div>
         </section>
 
         <section class="panel">
@@ -1401,16 +1448,60 @@
       shortageCost:3.5, unitCost:0.85, demandUnitBasis:"year", leadTimeUnit:"month",
       scenario:"uncertainDemand"
     };
-    const benchmarkInputs = {
-      meanAnnualDemand:600, demandStdDev:204.12414575745962, leadTime:0.25,
-      leadTimeStdDev:0.05, reorderPoint:272.5683134242594, orderQuantity:5222.329682168751,
-      setupCost:100, holdingCostRate:0.004794552452342729, shortageCost:1, unitCost:0.1,
-      demandUnitBasis:"year", leadTimeUnit:"year", scenario:"uncertainDemand"
+    const validatedBenchmarkPreset = {
+      id:"validated-benchmark",
+      label:"Validated benchmark",
+      group:"benchmark",
+      inputs:{
+        meanAnnualDemand:600, demandStdDev:204.12414575745962, leadTime:0.25,
+        leadTimeStdDev:0.05, reorderPoint:272.5683134242594, orderQuantity:5222.329682168751,
+        setupCost:100, holdingCostRate:0.004794552452342729, shortageCost:1, unitCost:0.1,
+        demandUnitBasis:"year", leadTimeUnit:"year", scenario:"uncertainDemand"
+      },
+      targets:{
+        z:1.200919303, pdf:0.193971872, nl:0.055996749, expectedShortage:5.715144262,
+        shortageCost:0.656620085, holdingCost:13.107027, setupCost:11.48912529, proportionalOrderCost:60
+      }
     };
-    const benchmarkTargets = {
-      z:1.200919303, pdf:0.193971872, nl:0.055996749, expectedShortage:5.715144262,
-      shortageCost:0.656620085, holdingCost:13.107027, setupCost:11.48912529, proportionalOrderCost:60
+    const harveySharedInputs = {
+      meanAnnualDemand:200,
+      demandStdDev:35.36,
+      leadTime:0.5,
+      leadTimeStdDev:0,
+      setupCost:50,
+      holdingCostRate:2,
+      shortageCost:25,
+      unitCost:10,
+      demandUnitBasis:"year",
+      leadTimeUnit:"year",
+      scenario:"uncertainDemand"
     };
+    const harveyDemoPresets = [
+      {
+        id:"harvey-baseline",
+        label:"Harvey baseline (Q=100, R=144)",
+        buttonLabel:"Harvey baseline",
+        group:"harvey",
+        inputs:{ ...harveySharedInputs, reorderPoint:144, orderQuantity:100 }
+      },
+      {
+        id:"harvey-optimal",
+        label:"Harvey optimal (Q=111, R=143)",
+        buttonLabel:"Harvey optimal",
+        group:"harvey",
+        inputs:{ ...harveySharedInputs, reorderPoint:143, orderQuantity:111 }
+      }
+    ];
+    const presetCatalog = [validatedBenchmarkPreset].concat(harveyDemoPresets);
+    const presetById = Object.fromEntries(presetCatalog.map(preset => [preset.id, preset]));
+    const validationBenchmarkId = validatedBenchmarkPreset.id;
+    const harveyBaselinePresetId = "harvey-baseline";
+    const harveyOptimalPresetId = "harvey-optimal";
+    const qrComparisonTolerance = Object.freeze({
+      q:0.5,
+      r:0.5,
+      cost:0.01
+    });
 
     /* ── DOM ───────────────────────────────────────────────────────── */
     const inputGrid = document.getElementById("inputGrid");
@@ -1428,6 +1519,11 @@
     const qrPlotDescription = document.getElementById("qrPlotDescription");
     const qrEncodingNote = document.getElementById("qrEncodingNote");
     const qrViewInputs = document.querySelectorAll('input[name="qrViewMode"]');
+    const loadBenchmarkBtn = document.getElementById("loadBenchmarkBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const presetButtonRow = document.getElementById("presetButtonRow");
+    const compareHarveyPresetsBtn = document.getElementById("compareHarveyPresetsBtn");
+    const presetStatusNote = document.getElementById("presetStatusNote");
     const qrComparisonIntro = document.getElementById("qrComparisonIntro");
     const qrCurrentCost = document.getElementById("qrCurrentCost");
     const qrCurrentQ = document.getElementById("qrCurrentQ");
@@ -1448,17 +1544,25 @@
     const qrView3d = document.getElementById("qrView3d");
     const qrLandscapeState = { surface:null };
     let demandUnitBasisSelect, leadTimeUnitSelect;
+    let comparisonCase = null;
 
     buildInputFields();
-    resetTo(defaultInputs);
+    buildDemoPresetButtons();
     initQrLandscapeShell();
-    document.getElementById("loadBenchmarkBtn").addEventListener("click", () => { resetTo(benchmarkInputs); renderApp(); });
-    document.getElementById("resetBtn").addEventListener("click", () => { resetTo(defaultInputs); renderApp(); });
+    loadBenchmarkBtn.addEventListener("click", () => { loadPreset(validationBenchmarkId); });
+    resetBtn.addEventListener("click", () => {
+      clearComparisonCase();
+      syncPresetInUrl("");
+      resetTo(defaultInputs);
+      renderApp();
+    });
+    compareHarveyPresetsBtn.addEventListener("click", compareHarveyPresets);
     scenarioSelect.addEventListener("input", () => { updateVisibleInputs(); renderApp(); });
     demandUnitBasisSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
     leadTimeUnitSelect.addEventListener("input", () => { updateDynamicLabels(); renderApp(); });
     inputGrid.addEventListener("input", renderApp);
     costInputGrid.addEventListener("input", renderApp);
+    applyInitialState();
     renderApp();
 
     function initQrLandscapeShell() {
@@ -1510,57 +1614,47 @@
       const qVals = buildQrGridValues(currentQ, 0.3, 3, gridSize);
       const rVals = buildQrGridValues(currentR, 0.3, 3, gridSize);
       const costMatrix = [];
-      let optQ = currentQ;
-      let optR = currentR;
-      let optCost = Infinity;
-      let optType1 = 0;
-      let optType2 = 0;
-      let optimalIsCurrent = false;
+      const currentPolicy = evaluateQrPolicy(baseState, currentQ, currentR);
+      let optimalPolicy = currentPolicy;
 
       for (let qi = 0; qi < qVals.length; qi++) {
         const q = qVals[qi];
         const row = [];
         for (let ri = 0; ri < rVals.length; ri++) {
           const r = rVals[ri];
-          const scenario = computeScenario(baseState.scenario, { ...baseState, orderQuantity:q, reorderPoint:r });
-          const totalCost = scenario.costs.totalCost;
-          const type1 = computeType1Service(scenario);
-          const type2 = computeType2Service(scenario, q);
-          row.push(totalCost);
+          const policy = evaluateQrPolicy(baseState, q, r);
+          row.push(policy.cost);
 
-          if (totalCost < optCost) {
-            optCost = totalCost;
-            optQ = q;
-            optR = r;
-            optType1 = type1;
-            optType2 = type2;
+          if (isMeaningfullyLowerCost(policy.cost, optimalPolicy.cost)) {
+            optimalPolicy = policy;
           }
         }
         costMatrix.push(row);
       }
 
-      const currentScenario = computeScenario(baseState.scenario, { ...baseState, orderQuantity:currentQ, reorderPoint:currentR });
-      const curCost = currentScenario.costs.totalCost;
-      const curType1 = computeType1Service(currentScenario);
-      const curType2 = computeType2Service(currentScenario, currentQ);
-      optimalIsCurrent = Math.abs(optQ - currentQ) <= 1e-9 && Math.abs(optR - currentR) <= 1e-9;
-
-      return {
+      const optimalIsCurrent = qrPoliciesMatch(currentPolicy, optimalPolicy);
+      const costDelta = currentPolicy.cost - optimalPolicy.cost;
+      const surface = {
         qVals,
         rVals,
         costMatrix,
-        currentQ,
-        currentR,
-        optQ,
-        optR,
-        optCost,
-        optType1,
-        optType2,
-        curCost,
-        curType1,
-        curType2,
+        current:currentPolicy,
+        optimal:optimalPolicy,
+        currentQ:currentPolicy.q,
+        currentR:currentPolicy.r,
+        optQ:optimalPolicy.q,
+        optR:optimalPolicy.r,
+        optCost:optimalPolicy.cost,
+        optType1:optimalPolicy.type1,
+        optType2:optimalPolicy.type2,
+        curCost:currentPolicy.cost,
+        curType1:currentPolicy.type1,
+        curType2:currentPolicy.type2,
+        costDelta,
         optimalIsCurrent
       };
+      logQrComparisonDebug(surface);
+      return surface;
     }
 
     function normalizeQrSurfaceState(source) {
@@ -1570,13 +1664,46 @@
       return source;
     }
 
+    function evaluateQrPolicy(baseState, q, r) {
+      const scenario = computeScenario(baseState.scenario, { ...baseState, orderQuantity:q, reorderPoint:r });
+      return {
+        q,
+        r,
+        cost:scenario.costs.totalCost,
+        type1:computeType1Service(scenario),
+        type2:computeType2Service(scenario, q),
+        scenario
+      };
+    }
+
     function buildQrGridValues(currentValue, minFactor, maxFactor, gridSize) {
       const safeCurrent = Math.max(nn(currentValue), 1e-6);
       const minValue = Math.max(safeCurrent * minFactor, 1e-6);
       const maxValue = Math.max(safeCurrent * maxFactor, minValue + 1e-6);
       if (gridSize <= 1) return [safeCurrent];
       const step = (maxValue - minValue) / (gridSize - 1);
-      return Array.from({ length:gridSize }, (_, i) => minValue + step * i);
+      const values = Array.from({ length:gridSize }, (_, i) => minValue + step * i);
+      let nearestIndex = 0;
+      let nearestDistance = Infinity;
+      for (let i = 0; i < values.length; i++) {
+        const distance = Math.abs(values[i] - safeCurrent);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = i;
+        }
+      }
+      values[nearestIndex] = safeCurrent;
+      return values.sort((a, b) => a - b);
+    }
+
+    function isMeaningfullyLowerCost(candidateCost, referenceCost) {
+      return candidateCost < referenceCost - qrComparisonTolerance.cost;
+    }
+
+    function qrPoliciesMatch(currentPolicy, candidatePolicy) {
+      return Math.abs(candidatePolicy.q - currentPolicy.q) <= qrComparisonTolerance.q
+        && Math.abs(candidatePolicy.r - currentPolicy.r) <= qrComparisonTolerance.r
+        && Math.abs(candidatePolicy.cost - currentPolicy.cost) <= qrComparisonTolerance.cost;
     }
 
     function computeType1Service(m) {
@@ -1627,22 +1754,24 @@
     }
 
     function renderQrComparison(surface) {
-      const savings = Math.max(surface.curCost - surface.optCost, 0);
-      const percentSavings = surface.curCost > 0 ? (savings / surface.curCost) * 100 : 0;
+      const currentPolicy = surface.current;
+      const optimalPolicy = surface.optimal;
+      const savings = surface.optimalIsCurrent ? 0 : Math.max(surface.costDelta, 0);
+      const percentSavings = currentPolicy.cost > 0 ? (savings / currentPolicy.cost) * 100 : 0;
 
-      qrCurrentCost.textContent = fmtCurrency(surface.curCost);
-      qrOptimalCost.textContent = fmtCurrency(surface.optCost);
-      qrCurrentQ.textContent = "Q = " + fmt(surface.currentQ, 2);
-      qrCurrentR.textContent = "R = " + fmt(surface.currentR, 2);
-      qrOptimalQ.textContent = "Q* = " + fmt(surface.optQ, 2);
-      qrOptimalR.textContent = "R* = " + fmt(surface.optR, 2);
+      qrCurrentCost.textContent = fmtCurrency(currentPolicy.cost, 2);
+      qrOptimalCost.textContent = fmtCurrency(optimalPolicy.cost, 2);
+      qrCurrentQ.textContent = "Q = " + fmt(currentPolicy.q, 2);
+      qrCurrentR.textContent = "R = " + fmt(currentPolicy.r, 2);
+      qrOptimalQ.textContent = "Q* = " + fmt(optimalPolicy.q, 2);
+      qrOptimalR.textContent = "R* = " + fmt(optimalPolicy.r, 2);
       qrMetricCostGap.textContent = surface.optimalIsCurrent
-        ? "No gap at current settings"
-        : fmtCurrency(savings) + " lower at the best point";
-      qrMetricType1.innerHTML = formatServiceDelta(surface.curType1, surface.optType1);
-      qrMetricType2.innerHTML = formatServiceDelta(surface.curType2, surface.optType2);
+        ? "No meaningful gap at current settings"
+        : fmtCurrency(savings, 2) + " lower at the best point";
+      qrMetricType1.innerHTML = formatServiceDelta(currentPolicy.type1, optimalPolicy.type1);
+      qrMetricType2.innerHTML = formatServiceDelta(currentPolicy.type2, optimalPolicy.type2);
 
-      if (surface.optimalIsCurrent || savings < 1e-6) {
+      if (surface.optimalIsCurrent) {
         qrCurrentBadge.textContent = "In use";
         qrOptimalBadge.textContent = "Matches current";
         qrComparisonIntro.textContent = "The current policy already sits at the best point found on the QR landscape for these inputs.";
@@ -1656,8 +1785,31 @@
         qrComparisonIntro.textContent = "Compare the current policy against the lowest-cost point found on the QR landscape for the active inputs.";
         qrSavingsBanner.classList.remove("qr-savings-neutral");
         qrSavingsLabel.textContent = "Annual savings";
-        qrSavingsValue.textContent = fmtCurrency(savings) + (percentSavings >= 0.1 ? "  (" + fmt(percentSavings, 1) + "% lower)" : "");
+        qrSavingsValue.textContent = fmtCurrency(savings, 2) + (percentSavings >= 0.1 ? "  (" + fmt(percentSavings, 1) + "% lower)" : "");
         qrSavingsCopy.textContent = "Moving toward the best sampled Q and R reduces annual cost while updating the service tradeoff shown below.";
+      }
+    }
+
+    function logQrComparisonDebug(surface) {
+      if (!isQrDebugEnabled() || typeof console === "undefined" || typeof console.debug !== "function") return;
+      console.debug("[QR compare]", {
+        currentCost:Number(surface.curCost.toFixed(4)),
+        optimalCost:Number(surface.optCost.toFixed(4)),
+        delta:Number(surface.costDelta.toFixed(4)),
+        match:surface.optimalIsCurrent
+      });
+    }
+
+    function isQrDebugEnabled() {
+      if (typeof window === "undefined" || typeof URL === "undefined") return false;
+      try {
+        const url = new URL(window.location.href);
+        return url.searchParams.get("debug") === "1"
+          || url.searchParams.get("debug") === "qr"
+          || url.hostname === "localhost"
+          || url.hostname === "127.0.0.1";
+      } catch (error) {
+        return false;
       }
     }
 
@@ -2095,6 +2247,46 @@
       return surface;
     }
 
+    function buildDemoPresetButtons() {
+      presetButtonRow.innerHTML = harveyDemoPresets.map(preset => `
+        <button class="secondary-btn preset-btn" type="button" data-preset-id="${preset.id}">${preset.buttonLabel}</button>
+      `).join("");
+      presetButtonRow.querySelectorAll("[data-preset-id]").forEach(button => {
+        button.addEventListener("click", () => { loadPreset(button.dataset.presetId); });
+      });
+    }
+
+    function applyInitialState() {
+      const presetId = getRequestedPresetId();
+      if (presetId && presetById[presetId]) {
+        loadPreset(presetId, { render:false, syncUrl:false });
+        return;
+      }
+      resetTo(defaultInputs);
+    }
+
+    function loadPreset(presetId, options={}) {
+      const preset = presetById[presetId];
+      if (!preset) return false;
+      if (!options.keepComparison) clearComparisonCase();
+      resetTo(preset.inputs);
+      if (options.syncUrl !== false) syncPresetInUrl(preset.id);
+      if (options.render !== false) renderApp();
+      return true;
+    }
+
+    function compareHarveyPresets() {
+      const baselinePreset = presetById[harveyBaselinePresetId];
+      const optimalPreset = presetById[harveyOptimalPresetId];
+      if (!baselinePreset || !optimalPreset) return;
+
+      resetTo(baselinePreset.inputs);
+      const baselineState = readInputs();
+      const baselineMetrics = computeScenario(baselineState.scenario, baselineState);
+      comparisonCase = captureComparisonCase(baselinePreset, baselineMetrics);
+      loadPreset(optimalPreset.id, { keepComparison:true });
+    }
+
     function buildInputFields() {
       inputConfig.forEach(config => {
         const wrapper = document.createElement("div");
@@ -2128,6 +2320,20 @@
       const s = document.createElement("select"); s.id = id;
       options.forEach(([v,t]) => { const o = document.createElement("option"); o.value=v; o.textContent=t; s.appendChild(o); });
       w.appendChild(l); w.appendChild(s); return { wrapper:w, select:s };
+    }
+
+    function captureComparisonCase(preset, metrics) {
+      return {
+        id:preset.id,
+        label:preset.label,
+        orderQuantity:metrics.state.orderQuantity,
+        reorderPoint:metrics.state.reorderPoint,
+        totalCost:metrics.costs.totalCost
+      };
+    }
+
+    function clearComparisonCase() {
+      comparisonCase = null;
     }
 
     function resetTo(vals) {
@@ -2176,9 +2382,10 @@
         ["Uncertain demand during lead time",        computeScenario("uncertainDemand", state)],
         ["Uncertain demand and uncertain lead time", computeScenario("uncertainDemandAndLeadTime", state)]
       ];
+      updatePresetButtonStates(state);
       renderQrLandscape(active);
       renderOutputs(active); renderCosts(active); renderComparison(scenarios);
-      renderCurve(active); renderNlPanel(active); renderBenchmarkMessage(active, state);
+      renderCurve(active); renderNlPanel(active); renderPresetStatus(active, state); renderBenchmarkMessage(active, state);
     }
 
     function renderOutputs(m) {
@@ -2313,14 +2520,61 @@
         ${tailPts.length ? `<text x="${Math.min(rX+90,W-mg.right-20)}" y="${mg.top+46}" fill="var(--tail-line)" font-size="13" font-family="Inter,sans-serif" font-weight="600">P(stockout)</text>` : ""}`;
     }
 
+    function renderPresetStatus(m, state) {
+      const activePreset = findMatchingPreset(state);
+      if (!comparisonCase) {
+        if (activePreset && activePreset.group === "harvey") {
+          presetStatusNote.textContent =
+            activePreset.label + " loaded. Lead-time demand stays derived from the shared annual inputs: mu_X = "
+            + fmt(m.meanLeadTimeDemand, 2) + ", sigma_X = " + fmt(m.sigmaX, 2) + ".";
+          presetStatusNote.hidden = false;
+          return;
+        }
+        presetStatusNote.textContent = "";
+        presetStatusNote.hidden = true;
+        return;
+      }
+
+      const currentLabel = activePreset ? activePreset.label : "Current inputs";
+      presetStatusNote.textContent =
+        "Comparing " + currentLabel + " against " + comparisonCase.label
+        + " (Q = " + fmt(comparisonCase.orderQuantity, 0) + ", R = " + fmt(comparisonCase.reorderPoint, 0) + "): "
+        + buildCostComparisonSummary(m.costs.totalCost, comparisonCase.totalCost);
+      presetStatusNote.hidden = false;
+    }
+
+    function updatePresetButtonStates(state) {
+      const activePreset = findMatchingPreset(state);
+      presetButtonRow.querySelectorAll("[data-preset-id]").forEach(button => {
+        const isActive = !!activePreset && button.dataset.presetId === activePreset.id;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+
+      const compareActive = !!comparisonCase
+        && comparisonCase.id === harveyBaselinePresetId
+        && !!activePreset
+        && activePreset.id === harveyOptimalPresetId;
+      compareHarveyPresetsBtn.classList.toggle("is-active", compareActive);
+      compareHarveyPresetsBtn.setAttribute("aria-pressed", compareActive ? "true" : "false");
+    }
+
     function renderBenchmarkMessage(m, state) {
-      const active = inputConfig.every(({id}) => Math.abs(state[id]-benchmarkInputs[id]) <= 1e-6)
-        && state.scenario===benchmarkInputs.scenario
-        && state.demandUnitBasis===benchmarkInputs.demandUnitBasis
-        && state.leadTimeUnit===benchmarkInputs.leadTimeUnit;
-      if (!active) { benchmarkNote.textContent = "Load benchmark to validate live outputs against known targets."; return; }
-      const checks = [["z",m.z,benchmarkTargets.z],["NL(z)",m.nl,benchmarkTargets.nl],["n_R",m.expectedShortage,benchmarkTargets.expectedShortage]];
-      benchmarkNote.textContent = "Benchmark: " + checks.map(([l,a,t]) => `${l} = ${fmt(a,6)} (target ${fmt(t,6)})`).join(", ");
+      const activePreset = findMatchingPreset(state);
+      if (activePreset && activePreset.id === validationBenchmarkId) {
+        const benchmarkTargets = validatedBenchmarkPreset.targets;
+        const checks = [["z",m.z,benchmarkTargets.z],["NL(z)",m.nl,benchmarkTargets.nl],["n_R",m.expectedShortage,benchmarkTargets.expectedShortage]];
+        benchmarkNote.textContent = "Benchmark: " + checks.map(([l,a,t]) => `${l} = ${fmt(a,6)} (target ${fmt(t,6)})`).join(", ");
+        return;
+      }
+      if (activePreset && activePreset.group === "harvey") {
+        benchmarkNote.textContent =
+          activePreset.label + ": mu_X = " + fmt(m.meanLeadTimeDemand, 2)
+          + " and sigma_X = " + fmt(m.sigmaX, 2)
+          + " are computed automatically from D = 200/year, sigma_D = 35.36/year, and L = 0.5 years.";
+        return;
+      }
+      benchmarkNote.textContent = "Load benchmark to validate live outputs against known targets.";
     }
 
     function updateDynamicLabels() {
@@ -2367,6 +2621,54 @@
       const t=1/(1+0.3275911*x);
       const e=1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t)*Math.exp(-x*x);
       return 0.5*(1+s*e);
+    }
+    function normalizePresetId(value) { return typeof value === "string" ? value.trim().toLowerCase() : ""; }
+    function getRequestedPresetId() {
+      try {
+        const url = new URL(window.location.href);
+        const queryPreset = normalizePresetId(url.searchParams.get("preset"));
+        if (queryPreset && presetById[queryPreset]) return queryPreset;
+        const rawHash = url.hash ? url.hash.slice(1) : "";
+        const hashPreset = rawHash.startsWith("preset=") ? rawHash.slice(7) : rawHash;
+        const normalizedHashPreset = normalizePresetId(hashPreset);
+        return presetById[normalizedHashPreset] ? normalizedHashPreset : "";
+      } catch (error) {
+        return "";
+      }
+    }
+    function syncPresetInUrl(presetId) {
+      if (typeof window === "undefined" || !window.history || !window.location || typeof URL === "undefined") return;
+      const normalizedPresetId = normalizePresetId(presetId);
+      const url = new URL(window.location.href);
+      if (normalizedPresetId) url.searchParams.set("preset", normalizedPresetId);
+      else url.searchParams.delete("preset");
+
+      const rawHash = url.hash ? url.hash.slice(1) : "";
+      const hashPreset = rawHash.startsWith("preset=") ? rawHash.slice(7) : rawHash;
+      if (presetById[normalizePresetId(hashPreset)]) {
+        url.hash = normalizedPresetId ? "#preset=" + normalizedPresetId : "";
+      }
+
+      window.history.replaceState({}, "", url.toString());
+    }
+    function almostEqual(a, b, epsilon=1e-6) { return Math.abs(a - b) <= epsilon; }
+    function findMatchingPreset(state) {
+      return presetCatalog.find(preset => {
+        const presetState = preset.inputs;
+        return inputConfig.every(({id}) => almostEqual(state[id], presetState[id]))
+          && state.scenario === presetState.scenario
+          && state.demandUnitBasis === presetState.demandUnitBasis
+          && state.leadTimeUnit === presetState.leadTimeUnit;
+      }) || null;
+    }
+    function buildCostComparisonSummary(currentCost, comparisonCost) {
+      const delta = currentCost - comparisonCost;
+      if (Math.abs(delta) <= 1e-6) {
+        return "total annual cost matches at " + fmtCurrency(currentCost, 2) + ".";
+      }
+      const direction = delta < 0 ? "lower" : "higher";
+      return "total annual cost goes from " + fmtCurrency(comparisonCost, 2) + " to "
+        + fmtCurrency(currentCost, 2) + ", " + fmtCurrency(Math.abs(delta), 2) + " " + direction + ".";
     }
     function nn(v) { return isFinite(v) ? Math.max(v,0) : 0; }
     function fmt(v, d=2) { if (!isFinite(v)) return "—"; return Number(v).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
